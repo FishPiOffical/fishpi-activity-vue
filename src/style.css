@@ -1,54 +1,21 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin 'tailwindcss-animate';
 
-:root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  line-height: 1.5;
-  font-weight: 400;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+/* 修复 body margin 问题 */
+body {
+  margin: 0 !important;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html,
-body,
+/* 修复 #app 白边问题 */
+
 #app {
-  height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  /* Prevent body scroll, let n-layout handle it */
-}
-
-/* Theme background overrides - ensure Tailwind bg-gray-50 works in light mode */
-html:not(.dark) body,
-html:not(.dark) #app {
-  background-color: #f9fafb !important;
-}
-
-html.dark body,
-html.dark #app {
-  background-color: #101014 !important;
-}
-
-/* Custom scrollbar for webkit (optional, if native scrollbar is used) */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(144, 147, 153, 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(144, 147, 153, 0.5);
+  width: 100%;
+  min-height: 100vh;
 }

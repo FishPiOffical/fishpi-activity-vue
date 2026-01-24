@@ -1,33 +1,29 @@
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
-import globals from 'globals'
+import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier'
 
-export default [
+export default tseslint.config(
     {
-        name: 'app/files-to-lint',
-        files: ['**/*.{js,mjs,jsx,vue}'],
+        ignores: ['dist', 'node_modules', 'src/auto-imports.d.ts', 'src/components.d.ts', 'src/typed-router.d.ts'],
+    },
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
+    ...pluginVue.configs['flat/recommended'],
+    {
+        files: ['*.vue', '**/*.vue'],
         languageOptions: {
-            globals: {
-                ...globals.browser,
-                ...globals.node,
+            parserOptions: {
+                parser: tseslint.parser,
             },
         },
     },
-
-    {
-        name: 'app/files-to-ignore',
-        ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
-    },
-
-    js.configs.recommended,
-    ...pluginVue.configs['flat/recommended'],
-    skipFormatting,
-
     {
         rules: {
             'vue/multi-word-component-names': 'off',
-            'no-unused-vars': 'warn',
+            '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
         },
     },
-]
+    eslintConfigPrettier,
+)

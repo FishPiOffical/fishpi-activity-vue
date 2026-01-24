@@ -30,13 +30,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/activity/[id]': RouteRecordInfo<
-      '/activity/[id]',
-      '/activity/:id',
-      { id: ParamValue<true> },
-      { id: ParamValue<false> },
-      | never
-    >,
     '/redirect': RouteRecordInfo<
       '/redirect',
       '/redirect',
@@ -60,12 +53,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/index.vue': {
       routes:
         | '/'
-      views:
-        | never
-    }
-    'src/pages/activity/[id].vue': {
-      routes:
-        | '/activity/[id]'
       views:
         | never
     }

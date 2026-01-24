@@ -1,21 +1,31 @@
-<script setup>
-import { NConfigProvider, NGlobalStyle, NMessageProvider } from 'naive-ui'
-import { useThemeStore } from '@/store/theme'
-import MainLayout from '@/layouts/MainLayout.vue'
-import { computed } from 'vue'
-import { darkTheme } from 'naive-ui'
+<script setup lang="ts">
+import { darkTheme, zhCN, dateZhCN } from 'naive-ui'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import AppProvider from '@/components/AppProvider.vue'
+import { useAppStore, useUserStore } from '@/stores'
 
-const themeStore = useThemeStore()
-const theme = computed(() => themeStore.isDark ? darkTheme : null)
+const appStore = useAppStore()
+const userStore = useUserStore()
+
+// 初始化用户状态
+userStore.init()
+
+// 获取 naive-ui 主题
+const theme = computed(() => (appStore.isDark ? darkTheme : null))
 </script>
 
 <template>
-  <NConfigProvider :theme="theme">
-    <NGlobalStyle />
-    <NMessageProvider>
-      <MainLayout>
-        <RouterView />
-      </MainLayout>
-    </NMessageProvider>
-  </NConfigProvider>
+  <n-config-provider :theme="theme" :locale="zhCN" :date-locale="dateZhCN">
+    <n-message-provider>
+      <n-dialog-provider>
+        <n-notification-provider>
+          <n-loading-bar-provider>
+            <AppProvider>
+              <DefaultLayout />
+            </AppProvider>
+          </n-loading-bar-provider>
+        </n-notification-provider>
+      </n-dialog-provider>
+    </n-message-provider>
+  </n-config-provider>
 </template>
