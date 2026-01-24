@@ -9,14 +9,6 @@ import {
 import { getActivityStatus, formatDate } from '@/utils'
 import { activityApi } from '@/api'
 
-// TinyMCE
-import 'tinymce/tinymce'
-import 'tinymce/themes/silver'
-import 'tinymce/icons/default'
-import 'tinymce/skins/ui/oxide/skin.css'
-import 'tinymce/skins/content/default/content.css'
-import Editor from '@tinymce/tinymce-vue'
-
 const router = useRouter()
 
 // 状态
@@ -189,49 +181,48 @@ onMounted(() => {
                   type="primary"
                   size="small"
                   class="mb-2"
-                  @click.stop="toggleExpand(activity.id)"
+                  @click.stop.prevent="toggleExpand(activity.id)"
                 >
                   {{ isExpanded(activity.id) ? '收起描述' : '展开描述' }}
                 </n-button>
 
                 <n-collapse-transition :show="isExpanded(activity.id)">
-                  <div class="rounded border p-4" @click.stop>
-                    <Editor
-                      :init="{
-                        menubar: false,
-                        toolbar: false,
-                        statusbar: false,
-                        readonly: true,
-                        inline: true,
-                        content_style:
-                          'body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 14px; line-height: 1.6; }',
-                      }"
-                      :initial-value="activity.desc"
-                      disabled
-                    />
+                  <div class="rounded border p-4" @click.stop.prevent>
+                    <div v-html="activity.desc"></div>
                   </div>
                 </n-collapse-transition>
-              </div>
-
-              <!-- 活动标签 -->
-              <div v-if="activity.tag" class="flex items-center gap-2">
-                <n-tag size="small" round>
-                  {{ activity.tag }}
-                </n-tag>
               </div>
             </div>
 
             <template #action>
-              <div class="flex items-center justify-start">
-                <n-button
-                  v-if="activity.articleUrl"
-                  text
-                  type="primary"
-                  size="small"
-                  @click.stop="openArticleLink(activity)"
-                >
-                  查看推文 →
-                </n-button>
+              <div class="flex items-center justify-between">
+                <!-- 左侧：活动标签 -->
+                <div class="flex items-center gap-2">
+                  <n-tag v-if="activity.tag" size="small" round>
+                    {{ activity.tag }}
+                  </n-tag>
+                </div>
+                <!-- 右侧：查看推文和查看详情 -->
+                <div class="flex items-center gap-2">
+                  <n-button
+                    v-if="activity.articleUrl"
+                    text
+                    type="primary"
+                    size="small"
+                    @click.stop="openArticleLink(activity)"
+                  >
+                    查看推文
+                  </n-button>
+                  <n-button
+                    v-if="activity.externalUrl || activity.slug"
+                    text
+                    type="primary"
+                    size="small"
+                    @click.stop="openActivityPage(activity)"
+                  >
+                    查看详情 →
+                  </n-button>
+                </div>
               </div>
             </template>
           </n-card>
