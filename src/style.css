@@ -23,6 +23,17 @@ body,
   /* Prevent body scroll, let n-layout handle it */
 }
 
+/* Theme background overrides - ensure Tailwind bg-gray-50 works in light mode */
+html:not(.dark) body,
+html:not(.dark) #app {
+  background-color: #f9fafb !important;
+}
+
+html.dark body,
+html.dark #app {
+  background-color: #101014 !important;
+}
+
 /* Custom scrollbar for webkit (optional, if native scrollbar is used) */
 ::-webkit-scrollbar {
   width: 6px;

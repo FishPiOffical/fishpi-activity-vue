@@ -66,7 +66,10 @@ const handleUserSelect = (key) => {
 </script>
 
 <template>
-    <n-layout position="absolute" class="bg-gray-50 dark:bg-[#101014]">
+    <n-layout
+        position="absolute"
+        :style="themeStore.isDark ? 'background-color: #101014;' : 'background-color: #f9fafb;'"
+    >
         <!-- Fixed Header -->
         <n-layout-header bordered style="height: 64px;" class="flex items-center px-4 justify-between z-50 transition-colors duration-300">
             <div class="text-xl font-bold cursor-pointer flex items-center gap-2 select-none" @click="router.push('/')">
@@ -75,7 +78,7 @@ const handleUserSelect = (key) => {
             </div>
             <div class="flex items-center gap-4">
                 <n-menu mode="horizontal" :options="menuOptions" responsive />
-                
+
                 <n-dropdown trigger="click" :options="themeOptions" @select="handleThemeSelect">
                     <n-button quaternary circle>
                         <template #icon>
@@ -110,9 +113,12 @@ round :src="avatarUrl" size="small"
 
         <!-- Scrollable Content Area -->
         <n-layout
-position="absolute" style="top: 64px; bottom: 0;" :native-scrollbar="false"
+            position="absolute"
+            style="top: 64px; bottom: 0;"
+            :native-scrollbar="false"
             content-style="min-height: 100%; display: flex; flex-direction: column;"
-            class="bg-gray-50 dark:bg-[#101014] transition-colors duration-300">
+            :style="themeStore.isDark ? 'background-color: #101014;' : 'background-color: #f9fafb;'"
+        >
             <div class="flex-1 flex flex-col p-4 md:p-6 lg:p-8">
                 <div class="max-w-7xl mx-auto w-full flex-1">
                      <slot />
