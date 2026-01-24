@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    HtmlContent: typeof import('./components/HtmlContent.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NButton: typeof import('naive-ui')['NButton']
     NDropdown: typeof import('naive-ui')['NDropdown']
@@ -23,5 +24,6 @@ declare module 'vue' {
     NSpin: typeof import('naive-ui')['NSpin']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TinymceEditor: typeof import('./components/TinymceEditor.vue')['default']
   }
 }
