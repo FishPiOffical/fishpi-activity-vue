@@ -1,21 +1,31 @@
 import { defineStore } from 'pinia'
 import { pb } from '@/api/pocketbase'
+import { ref } from 'vue'
 
-export const useUserStore = defineStore('user', {
-    state: () => ({
-        user: pb.authStore.model,
-        token: pb.authStore.token
-    }),
-    actions: {
-        login(token, user) {
-            pb.authStore.save(token, user)
-            this.token = token
-            this.user = user
-        },
-        logout() {
-            pb.authStore.clear()
-            this.token = ''
-            this.user = null
-        }
+export const useUserStore = defineStore('user', () => {
+    const user = ref(pb.authStore.model)
+    const token = ref(pb.authStore.token)
+
+    // Sync from PB to Pinia
+    pb.authStore.onChange((newToken, newModel) => {
+        token.value = newToken
+        user.value = newModel
+    })
+
+    const login = (newToken, newUser) => {
+        pb.authStore.save(newToken, newUser)
     }
+
+    const logout = () => {
+        pb.authStore.clear()
+    }
+
+    return {
+        user,
+        token,
+        login,
+        logout
+    }
+}, {
+    persist: true
 })

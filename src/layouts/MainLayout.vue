@@ -33,7 +33,8 @@ const menuOptions = computed(() => {
 
 const avatarUrl = computed(() => {
     if (userStore.user && userStore.user.avatar) {
-        return pb.files.getUrl(userStore.user, userStore.user.avatar)
+        return userStore.user.avatar
+        // return pb.files.getURL(userStore.user, userStore.user.avatar)
     }
     return ''
 })
@@ -46,6 +47,21 @@ const themeOptions = [
 
 const handleThemeSelect = (key) => {
     themeStore.setTheme(key)
+}
+
+const userOptions = [
+    { label: '个人主页', key: 'profile' },
+    { label: '退出登录', key: 'logout' }
+]
+
+const handleUserSelect = (key) => {
+    if (key === 'profile') {
+        if (userStore.user?.username) {
+            window.open(`https://fishpi.cn/member/${userStore.user.username}`, '_blank')
+        }
+    } else if (key === 'logout') {
+        userStore.logout()
+    }
 }
 </script>
 
@@ -70,16 +86,22 @@ const handleThemeSelect = (key) => {
                     </n-button>
                 </n-dropdown>
 
-                <div v-if="userStore.user" class="flex items-center gap-3">
-                    <n-avatar
+                <n-dropdown v-if="userStore.user" trigger="hover" :options="userOptions" @select="handleUserSelect">
+                    <div class="flex items-center gap-3 cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 group">
+                        <n-avatar
 round :src="avatarUrl" size="small"
-                        class="border border-gray-200 dark:border-gray-700"
-                        fallback-src="https://fishpi.cn/images/user-thumbnail.png" />
-                    <div class="hidden sm:flex flex-col text-right leading-tight">
-                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ userStore.user.nickname || userStore.user.name || userStore.user.username }}</span>
+                            class="border border-gray-200 dark:border-gray-700 group-hover:border-green-500/50 transition-colors"
+                            fallback-src="https://fishpi.cn/images/user-thumbnail.png" />
+                        <div class="hidden sm:flex flex-col items-start leading-tight min-w-[60px]">
+                            <span class="text-sm font-bold text-gray-800 dark:text-gray-200">
+                                {{ userStore.user.nickname || userStore.user.name || userStore.user.username }}
+                            </span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-mono group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                                @{{ userStore.user.username }}
+                            </span>
+                        </div>
                     </div>
-                    <n-button size="small" secondary type="error" ghost @click="userStore.logout">退出</n-button>
-                </div>
+                </n-dropdown>
                 <n-button v-else type="primary" class="shadow-sm" @click="handleLogin">
                     ✨ 登录
                 </n-button>
