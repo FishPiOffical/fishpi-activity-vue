@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @plugin 'tailwindcss-animate';
 
+/* TailwindCSS 4.x dark 模式配置 - 使用 .dark 类选择器 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* 修复 body margin 问题 */
 body {
   margin: 0 !important;

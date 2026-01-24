@@ -12,6 +12,15 @@ userStore.init()
 
 // 获取 naive-ui 主题
 const theme = computed(() => (appStore.isDark ? darkTheme : null))
+
+// 同步 dark 类到 html 元素，以便 TailwindCSS dark 模式生效
+watchEffect(() => {
+  if (appStore.isDark) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+})
 </script>
 
 <template>
