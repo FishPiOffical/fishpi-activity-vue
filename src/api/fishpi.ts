@@ -5,17 +5,51 @@
 
 import { API_FISHPI } from '@/constants'
 import { BASE_URL } from '@/config'
-import type { VerifyResponse } from '@/types'
+import type { VerifyResponse, User } from '@/types'
 import { pb, handlePbError } from './pocketbase'
 
 // 消息提示实例
 let messageApi: ReturnType<typeof useMessage> | null = null
+
+// 用户状态引用
+let userRef: { value: User | null } | null = null
 
 /**
  * 设置消息提示 API
  */
 export function setFishpiMessageApi(api: ReturnType<typeof useMessage>) {
     messageApi = api
+}
+
+/**
+ * 初始化用户状态管理
+ * 监听 PocketBase authStore 变化并更新用户状态
+ */
+export function initUserStore(userState: { value: User | null }) {
+    userRef = userState
+
+    // 初始状态：从 authStore 恢复用户信息
+    if (pb.authStore.isValid && pb.authStore.record) {
+        userRef.value = pb.authStore.record as unknown as User
+    }
+
+    // 监听 authStore 变化
+    pb.authStore.onChange((_token, record) => {
+        if (pb.authStore.isValid && record) {
+            userRef!.value = record as unknown as User
+        } else {
+            userRef!.value = null
+        }
+    })
+}
+
+/**
+ * 手动设置用户状态（用于登录后立即更新）
+ */
+export function setUserInfo(userData: User) {
+    if (userRef) {
+        userRef.value = userData
+    }
 }
 
 /**
@@ -57,9 +91,11 @@ export async function verifyLogin(id: string): Promise<VerifyResponse> {
 
         const data: VerifyResponse = await response.json()
 
-        // 保存登录状态到 PocketBase authStore
-        // 使用类型断言，因为后端返回的用户对象结构与 PocketBase RecordModel 不完全一致
-        pb.authStore.save(data.token, data.user as unknown as Parameters<typeof pb.authStore.save>[1])
+        // 保存 token 到 PocketBase authStore
+        pb.authStore.save(data.token, null)
+
+        // 手动设置用户状态（确保立即更新）
+        setUserInfo(data.user)
 
         return data
     } catch (error) {
@@ -98,4 +134,5 @@ export default {
     isLoggedIn,
     getCurrentUser,
     logout,
+    initUserStore,
 }

@@ -3,31 +3,19 @@
  */
 
 import { defineStore } from 'pinia'
-import { pb, fishpi } from '@/api'
+import { fishpi } from '@/api'
 import type { User } from '@/types'
 
 export const useUserStore = defineStore('user', () => {
     // 用户信息
     const user = ref<User | null>(null)
-    console.log('authstore', pb.authStore)
 
     // 是否已登录
-    const isLoggedIn = computed(() => pb.authStore.isValid)
+    const isLoggedIn = computed(() => user.value !== null)
 
     // 初始化：从 authStore 恢复用户信息
     function init() {
-        if (pb.authStore.isValid && pb.authStore.record) {
-            user.value = pb.authStore.record as unknown as User
-        }
-
-        // 监听 authStore 变化
-        pb.authStore.onChange(() => {
-            if (pb.authStore.isValid && pb.authStore.record) {
-                user.value = pb.authStore.record as unknown as User
-            } else {
-                user.value = null
-            }
-        })
+        fishpi.initUserStore(user)
     }
 
     // 设置用户信息
