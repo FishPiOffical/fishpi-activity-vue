@@ -16,6 +16,16 @@ const router = createRouter({
     routes,
 })
 
+// 全局前置守卫：处理静态 HTML 文件
+router.beforeEach((to, from, next) => {
+    // 如果路径以 .html 结尾，直接让浏览器加载静态文件
+    if (to.path.endsWith('.html')) {
+        window.location.href = to.fullPath
+        return false
+    }
+    next()
+})
+
 // 创建应用
 const app = createApp(App)
 
