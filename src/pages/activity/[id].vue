@@ -4,15 +4,14 @@ import { getActivityStatus, formatDate } from '@/utils'
 import { ACTIVITY_STATUS_CONFIG, ActivityStatus } from '@/constants'
 import type { Activity } from '@/types'
 import type { SelectOption } from 'naive-ui'
+import { useIframe } from '@/composables'
 
 // 路由参数
 const route = useRoute()
 const activityId = computed(() => route.params.id as string)
 
 // 是否为 iframe 模式
-const isIframe = computed(() => {
-  return route.query.type === 'iframe' || window.self !== window.top
-})
+const { isIframe } = useIframe()
 
 // 完整页面 URL
 const fullPageUrl = computed(() => {

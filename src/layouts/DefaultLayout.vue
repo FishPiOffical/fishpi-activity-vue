@@ -2,11 +2,13 @@
 import { APP_NAME } from '@/config'
 import { useAppStore, useUserStore } from '@/stores'
 import { ROUTE_PATHS } from '@/constants'
+import { useIframe } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
+const { isIframe } = useIframe()
 
 // 导航菜单
 const menuOptions = computed(() => {
@@ -51,7 +53,7 @@ const themeIcon = computed(() => {
 <template>
   <n-layout class="min-h-screen">
     <!-- 顶部导航栏 -->
-    <n-layout-header bordered class="fixed left-0 right-0 top-0 z-50 h-16">
+    <n-layout-header v-if="!isIframe" bordered class="fixed left-0 right-0 top-0 z-50 h-16">
       <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-4">
         <!-- 左侧：名称 -->
         <router-link to="/" class="flex items-center gap-2 text-lg font-semibold no-underline">
@@ -131,7 +133,7 @@ const themeIcon = computed(() => {
     </n-layout-header>
 
     <!-- 内容区 -->
-    <n-layout-content class="min-h-screen pt-16">
+    <n-layout-content :class="isIframe ? 'min-h-screen' : 'min-h-screen pt-16'">
       <div class="mx-auto max-w-6xl px-4 py-6">
         <router-view />
       </div>
