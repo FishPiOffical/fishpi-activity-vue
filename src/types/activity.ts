@@ -34,6 +34,7 @@ export interface Activity {
     image: string
     created: string
     updated: string
+    template?: 'default' | 'redirect' | 'article' // 活动模板类型
     // 扩展字段
     rewards?: Reward[]
 }

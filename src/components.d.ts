@@ -11,7 +11,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ActivityArticles: typeof import('./components/activity/ActivityArticles.vue')['default']
+    ActivityHistory: typeof import('./components/activity/ActivityHistory.vue')['default']
+    ActivityIntro: typeof import('./components/activity/ActivityIntro.vue')['default']
+    ActivityRewards: typeof import('./components/activity/ActivityRewards.vue')['default']
     AppProvider: typeof import('./components/AppProvider.vue')['default']
+    ArticleTemplate: typeof import('./components/activity/ArticleTemplate.vue')['default']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NButton: typeof import('naive-ui')['NButton']
     NCard: typeof import('naive-ui')['NCard']

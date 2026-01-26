@@ -101,11 +101,17 @@ function handleFilterChange() {
 
 // 打开活动页面
 function openActivityPage(activity: Activity) {
-  if (activity.externalUrl) {
-    window.open(activity.externalUrl, '_blank')
-  } else if (activity.slug) {
-    router.push(`/${activity.slug}`)
+  // template=redirect 时跳转到外部链接
+  if (activity.template === 'redirect') {
+    const url = activity.slug ? `/${activity.slug}` : activity.externalUrl
+    if (url) {
+      window.open(url.startsWith('http') ? url : `${window.location.origin}${url}`, '_blank')
+    }
+    return
   }
+
+  // 其他情况跳转到 /activity/{id}
+  router.push(`/activity/${activity.id}`)
 }
 
 // 打开鱼排文章链接
