@@ -4,7 +4,6 @@ import { getActivityStatus, formatDate } from '@/utils'
 import { ACTIVITY_STATUS_CONFIG, ActivityStatus } from '@/constants'
 import type { Activity } from '@/types'
 import type { SelectOption } from 'naive-ui'
-import { useIframe } from '@/composables'
 
 // 路由参数
 const route = useRoute()

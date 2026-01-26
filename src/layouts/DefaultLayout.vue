@@ -2,7 +2,6 @@
 import { APP_NAME } from '@/config'
 import { useAppStore, useUserStore } from '@/stores'
 import { ROUTE_PATHS } from '@/constants'
-import { useIframe } from '@/composables'
 
 const route = useRoute()
 const router = useRouter()
