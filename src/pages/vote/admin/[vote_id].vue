@@ -28,6 +28,12 @@ const switchStatusLoading = ref(false)
 // 算票相关
 const calculateLoading = ref(false)
 
+// 搜索相关
+const searchMember = ref('')
+const searchApply = ref('')
+const searchVoteDetail = ref('')
+const searchResult = ref('')
+
 // 状态映射
 const statusMap: Record<JuryStatus, string> = {
   pending: '未开启',
@@ -297,6 +303,50 @@ onMounted(() => {
 watch(voteId, () => {
   fetchJuryInfo()
 })
+
+// 过滤后的成员列表
+const filteredMembers = computed(() => {
+  if (!juryInfo.value?.members) return []
+  if (!searchMember.value.trim()) return juryInfo.value.members
+  const keyword = searchMember.value.toLowerCase().trim()
+  return juryInfo.value.members.filter(member =>
+    member.name.toLowerCase().includes(keyword) ||
+    member.nickname.toLowerCase().includes(keyword)
+  )
+})
+
+// 过滤后的申请列表
+const filteredApplyLogs = computed(() => {
+  if (!juryInfo.value?.applyLogs) return []
+  if (!searchApply.value.trim()) return juryInfo.value.applyLogs
+  const keyword = searchApply.value.toLowerCase().trim()
+  return juryInfo.value.applyLogs.filter(log =>
+    log.user?.name.toLowerCase().includes(keyword) ||
+    log.user?.nickname.toLowerCase().includes(keyword) ||
+    log.reason?.toLowerCase().includes(keyword)
+  )
+})
+
+// 过滤后的投票详情
+const filteredVoteDetails = computed(() => {
+  if (!voteDetails.value?.memberDetails) return []
+  if (!searchVoteDetail.value.trim()) return voteDetails.value.memberDetails
+  const keyword = searchVoteDetail.value.toLowerCase().trim()
+  return voteDetails.value.memberDetails.filter(member =>
+    member.user?.name.toLowerCase().includes(keyword) ||
+    member.user?.nickname.toLowerCase().includes(keyword)
+  )
+})
+
+// 过滤后的投票结果（每轮结果中的用户）
+function filterRoundResults(results: { userId: string; count: number; user: { name: string; nickname: string; avatar: string } | null }[]) {
+  if (!searchResult.value.trim()) return results
+  const keyword = searchResult.value.toLowerCase().trim()
+  return results.filter(item =>
+    item.user?.name.toLowerCase().includes(keyword) ||
+    item.user?.nickname.toLowerCase().includes(keyword)
+  )
+}
 </script>
 
 <template>
@@ -420,11 +470,24 @@ watch(voteId, () => {
       <!-- 投票详情（评审中状态） -->
       <n-card v-if="juryInfo.rule.status === 'voting' && voteDetails" class="mb-4" title="投票详情">
         <template #header-extra>
-          <n-tag type="info">第 {{ voteDetails.currentRound }} 轮</n-tag>
+          <n-space>
+            <n-input
+              v-model:value="searchVoteDetail"
+              placeholder="搜索成员..."
+              clearable
+              size="small"
+              style="width: 150px"
+            >
+              <template #prefix>
+                <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+              </template>
+            </n-input>
+            <n-tag type="info">第 {{ voteDetails.currentRound }} 轮</n-tag>
+          </n-space>
         </template>
         <n-collapse>
           <n-collapse-item
-            v-for="member in voteDetails.memberDetails"
+            v-for="member in filteredVoteDetails"
             :key="member.userId"
             :name="member.userId"
           >
@@ -480,6 +543,19 @@ watch(voteId, () => {
 
       <!-- 评审团成员管理 -->
       <n-card class="mb-4" title="评审团成员">
+        <template #header-extra>
+          <n-input
+            v-model:value="searchMember"
+            placeholder="搜索成员..."
+            clearable
+            size="small"
+            style="width: 150px"
+          >
+            <template #prefix>
+              <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+            </template>
+          </n-input>
+        </template>
         <!-- 添加成员 -->
         <n-space class="mb-4">
           <n-input
@@ -512,7 +588,7 @@ watch(voteId, () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="member in juryInfo.members" :key="member.id">
+            <tr v-for="member in filteredMembers" :key="member.id">
               <td>
                 <FishpiUser
                   :name="member.name"
@@ -537,9 +613,9 @@ watch(voteId, () => {
                 </n-popconfirm>
               </td>
             </tr>
-            <tr v-if="juryInfo.members.length === 0">
+            <tr v-if="filteredMembers.length === 0">
               <td colspan="3" class="text-center text-gray-500">
-                暂无成员
+                {{ searchMember ? '未找到匹配的成员' : '暂无成员' }}
               </td>
             </tr>
           </tbody>
@@ -548,6 +624,19 @@ watch(voteId, () => {
 
       <!-- 申请审核 -->
       <n-card v-if="juryInfo.applyLogs && juryInfo.applyLogs.length > 0" class="mb-4" title="申请审核">
+        <template #header-extra>
+          <n-input
+            v-model:value="searchApply"
+            placeholder="搜索申请..."
+            clearable
+            size="small"
+            style="width: 150px"
+          >
+            <template #prefix>
+              <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+            </template>
+          </n-input>
+        </template>
         <n-table :bordered="false" :single-line="false">
           <thead>
             <tr>
@@ -559,7 +648,7 @@ watch(voteId, () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="log in juryInfo.applyLogs" :key="log.id">
+            <tr v-for="log in filteredApplyLogs" :key="log.id">
               <td>
                 <FishpiUser
                   v-if="log.user"
@@ -598,12 +687,31 @@ watch(voteId, () => {
                 <span v-else>-</span>
               </td>
             </tr>
+            <tr v-if="filteredApplyLogs.length === 0">
+              <td colspan="5" class="text-center text-gray-500">
+                {{ searchApply ? '未找到匹配的申请' : '暂无申请' }}
+              </td>
+            </tr>
           </tbody>
         </n-table>
       </n-card>
 
       <!-- 投票结果 -->
+      <!-- 投票结果 -->
       <n-card v-if="juryInfo.results && juryInfo.results.length > 0" title="投票结果">
+        <template #header-extra>
+          <n-input
+            v-model:value="searchResult"
+            placeholder="搜索用户..."
+            clearable
+            size="small"
+            style="width: 150px"
+          >
+            <template #prefix>
+              <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+            </template>
+          </n-input>
+        </template>
         <n-collapse>
           <n-collapse-item
             v-for="round in juryInfo.results"
@@ -626,7 +734,7 @@ watch(voteId, () => {
               </thead>
               <tbody>
                 <tr
-                  v-for="(item, index) in [...round.results].sort((a, b) => b.count - a.count)"
+                  v-for="(item, index) in filterRoundResults([...round.results].sort((a, b) => b.count - a.count))"
                   :key="item.userId"
                 >
                   <td>{{ index + 1 }}</td>
@@ -651,6 +759,11 @@ watch(voteId, () => {
                     </div>
                   </td>
                   <td>{{ item.count }}</td>
+                </tr>
+                <tr v-if="filterRoundResults([...round.results]).length === 0">
+                  <td colspan="3" class="text-center text-gray-500">
+                    未找到匹配的用户
+                  </td>
                 </tr>
               </tbody>
             </n-table>

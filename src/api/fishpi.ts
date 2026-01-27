@@ -92,7 +92,7 @@ export async function verifyLogin(id: string): Promise<VerifyResponse> {
         const data: VerifyResponse = await response.json()
 
         // 保存 token 到 PocketBase authStore
-        pb.authStore.save(data.token, null)
+        pb.authStore.save(data.token, data.user)
 
         // 手动设置用户状态（确保立即更新）
         setUserInfo(data.user)

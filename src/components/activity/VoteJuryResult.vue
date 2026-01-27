@@ -36,6 +36,9 @@ const voteLoading = ref(false)
 const showVoteModal = ref(false)
 const cancelVoteLoading = ref(false)
 
+// 搜索相关
+const searchCandidate = ref('')
+
 // 状态映射
 const statusMap: Record<JuryStatus, string> = {
   pending: '未开启',
@@ -248,6 +251,18 @@ onMounted(() => {
 
 watch(() => props.voteId, () => {
   fetchResult()
+})
+
+// 过滤后的候选人列表
+const filteredCandidates = computed(() => {
+  if (!candidatesData.value?.candidates) return []
+  if (!searchCandidate.value.trim()) return candidatesData.value.candidates
+  const keyword = searchCandidate.value.toLowerCase().trim()
+  return candidatesData.value.candidates.filter(candidate =>
+    candidate.user?.name.toLowerCase().includes(keyword) ||
+    candidate.user?.nickname.toLowerCase().includes(keyword) ||
+    candidate.articles.some(article => article.title.toLowerCase().includes(keyword))
+  )
 })
 </script>
 
@@ -510,9 +525,21 @@ watch(() => props.voteId, () => {
           剩余 {{ candidatesData.remainingVotes }} / {{ candidatesData.totalVotes }} 票
         </n-alert>
 
+        <!-- 搜索框 -->
+        <n-input
+          v-model:value="searchCandidate"
+          placeholder="搜索候选人..."
+          clearable
+          class="mb-3"
+        >
+          <template #prefix>
+            <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+          </template>
+        </n-input>
+
         <div class="space-y-3 max-h-96 overflow-y-auto">
           <div
-            v-for="candidate in candidatesData.candidates"
+            v-for="candidate in filteredCandidates"
             :key="candidate.userId"
             class="p-3 bg-gray-50 dark:bg-gray-800 rounded"
           >
@@ -568,6 +595,13 @@ watch(() => props.voteId, () => {
               </div>
             </div>
           </div>
+
+          <!-- 无匹配结果 -->
+          <n-empty
+            v-if="filteredCandidates.length === 0"
+            :description="searchCandidate ? '未找到匹配的候选人' : '暂无候选人'"
+            size="small"
+          />
         </div>
       </template>
 

@@ -2,18 +2,14 @@
  * 用户相关类型定义
  */
 
+import type { RecordModel } from 'pocketbase'
+
 /** 用户信息 */
-export interface User {
-    id: string
-    o_id: string
+export interface User extends RecordModel {
+    oId: string
     name: string
     nickname: string
     avatar: string
-    email?: string
-    emailVisibility?: boolean
-    verified?: boolean
-    created?: string
-    updated?: string
 }
 
 /** 登录验证响应 */
