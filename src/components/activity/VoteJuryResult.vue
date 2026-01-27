@@ -353,16 +353,46 @@ watch(() => props.voteId, () => {
         </div>
       </template>
 
-      <!-- 投票结果 -->
+      <!-- 最终获胜者展示（放在最上方） -->
+      <template v-if="resultData.isVoteCompleted && resultData.finalWinner">
+        <n-divider />
+        <n-alert type="success" title="🎉 优胜者">
+          <div class="flex items-center gap-3 mt-2">
+            <n-avatar :src="resultData.finalWinner.avatar" :size="56" round />
+            <div>
+              <div class="font-bold text-lg">{{ resultData.finalWinner.nickname }}</div>
+              <div class="text-gray-500">@{{ resultData.finalWinner.name }} · 最终得票 {{ resultData.finalWinner.votes }} 票</div>
+            </div>
+          </div>
+          <!-- 获胜者的文章 -->
+          <div v-if="resultData.finalWinner.articles && resultData.finalWinner.articles.length > 0" class="mt-3">
+            <div class="text-sm font-medium mb-1">获奖作品：</div>
+            <div v-for="article in resultData.finalWinner.articles" :key="article.id" class="text-sm">
+              <a
+                :href="`https://fishpi.cn/article/${article.oId}`"
+                target="_blank"
+                class="text-blue-500 hover:underline"
+              >
+                {{ article.title }}
+              </a>
+              <span class="text-gray-400 ml-2">
+                👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
+              </span>
+            </div>
+          </div>
+        </n-alert>
+      </template>
+
+      <!-- 投票结果（按轮次倒序展示） -->
       <template v-if="resultData.results && resultData.results.length > 0">
         <n-divider />
         <div>
           <h4 class="text-base font-medium mb-2">投票结果</h4>
 
-          <!-- 按轮次顺序展示 -->
+          <!-- 按轮次倒序展示（最后一轮在上） -->
           <div class="space-y-4">
             <div
-              v-for="round in resultData.results"
+              v-for="round in [...resultData.results].reverse()"
               :key="round.round"
               class="border rounded-lg overflow-hidden dark:border-gray-600"
             >
@@ -413,36 +443,6 @@ watch(() => props.voteId, () => {
             </div>
           </div>
         </div>
-      </template>
-
-      <!-- 最终获胜者展示（放在投票结果下方） -->
-      <template v-if="resultData.isVoteCompleted && resultData.finalWinner">
-        <n-divider />
-        <n-alert type="success" title="🎉 优胜者">
-          <div class="flex items-center gap-3 mt-2">
-            <n-avatar :src="resultData.finalWinner.avatar" :size="56" round />
-            <div>
-              <div class="font-bold text-lg">{{ resultData.finalWinner.nickname }}</div>
-              <div class="text-gray-500">@{{ resultData.finalWinner.name }} · 最终得票 {{ resultData.finalWinner.votes }} 票</div>
-            </div>
-          </div>
-          <!-- 获胜者的文章 -->
-          <div v-if="resultData.finalWinner.articles && resultData.finalWinner.articles.length > 0" class="mt-3">
-            <div class="text-sm font-medium mb-1">获奖作品：</div>
-            <div v-for="article in resultData.finalWinner.articles" :key="article.id" class="text-sm">
-              <a
-                :href="`https://fishpi.cn/article/${article.oId}`"
-                target="_blank"
-                class="text-blue-500 hover:underline"
-              >
-                {{ article.title }}
-              </a>
-              <span class="text-gray-400 ml-2">
-                👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
-              </span>
-            </div>
-          </div>
-        </n-alert>
       </template>
 
       <!-- 无结果 -->
