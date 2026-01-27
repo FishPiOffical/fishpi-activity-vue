@@ -337,12 +337,26 @@ watch(() => props.voteId, () => {
         </div>
       </template>
 
+      <!-- 最终获胜者展示 -->
+      <template v-if="resultData.isVoteCompleted && resultData.finalWinner">
+        <n-divider />
+        <n-alert type="success" title="🎉 投票已结束">
+          <div class="flex items-center gap-3 mt-2">
+            <n-avatar :src="resultData.finalWinner.avatar" :size="56" round />
+            <div>
+              <div class="font-bold text-lg">{{ resultData.finalWinner.nickname }}</div>
+              <div class="text-gray-500">@{{ resultData.finalWinner.name }} · 最终得票 {{ resultData.finalWinner.votes }} 票</div>
+            </div>
+          </div>
+        </n-alert>
+      </template>
+
       <!-- 投票结果 -->
       <template v-if="resultData.results && resultData.results.length > 0">
         <n-divider />
         <div>
           <h4 class="text-base font-medium mb-2">投票结果</h4>
-          <n-collapse default-expanded-names="1">
+          <n-collapse :default-expanded-names="resultData.results.map(r => String(r.round))">
             <n-collapse-item
               v-for="round in resultData.results"
               :key="round.round"
@@ -350,15 +364,26 @@ watch(() => props.voteId, () => {
               :name="String(round.round)"
             >
               <template #header-extra>
-                <n-tag v-if="round.continue" type="warning" size="small">进入下一轮</n-tag>
-                <n-tag v-else type="success" size="small">已完成</n-tag>
+                <n-space>
+                  <n-tag v-if="round.continue" type="warning" size="small">
+                    {{ round.userIds.length }} 人平票
+                  </n-tag>
+                  <n-tag v-else type="success" size="small">最终结果</n-tag>
+                </n-space>
               </template>
 
               <div class="space-y-2">
                 <div
                   v-for="(item, index) in [...round.results].sort((a, b) => b.count - a.count)"
                   :key="item.userId"
-                  class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                  class="flex items-center justify-between p-2 rounded"
+                  :class="[
+                    round.continue && round.userIds.includes(item.userId)
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                      : !round.continue && round.userIds.includes(item.userId)
+                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                        : 'bg-gray-50 dark:bg-gray-800'
+                  ]"
                 >
                   <div class="flex items-center gap-2">
                     <span class="w-6 text-center font-bold">{{ index + 1 }}</span>
@@ -366,10 +391,17 @@ watch(() => props.voteId, () => {
                     <span>{{ item.user?.nickname || item.userId }}</span>
                     <n-tag
                       v-if="round.continue && round.userIds.includes(item.userId)"
-                      type="info"
+                      type="warning"
                       size="small"
                     >
-                      进入下一轮
+                      平票 → 下一轮
+                    </n-tag>
+                    <n-tag
+                      v-else-if="!round.continue && round.userIds.includes(item.userId)"
+                      type="success"
+                      size="small"
+                    >
+                      🏆 获胜
                     </n-tag>
                   </div>
                   <n-tag type="primary">{{ item.count }} 票</n-tag>

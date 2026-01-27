@@ -90,6 +90,14 @@ export interface GetJuryInfoResponse {
   results: RoundResult[]
   votingProgress: VotingProgress | null
   isAdmin: boolean
+  isVoteCompleted: boolean
+  finalWinner: {
+    id: string
+    name: string
+    nickname: string
+    avatar: string
+    votes: number
+  } | null
 }
 
 /** 创建用户请求 */
@@ -181,6 +189,14 @@ export interface GetResultResponse {
   currentRound: number
   results: RoundResult[]
   members: JuryMember[]
+  isVoteCompleted: boolean
+  finalWinner: {
+    id: string
+    name: string
+    nickname: string
+    avatar: string
+    votes: number
+  } | null
 }
 
 /** 获取我的申请响应 */

@@ -355,7 +355,7 @@ watch(voteId, () => {
         <!-- 状态切换和算票按钮 -->
         <n-space class="mt-4">
           <n-button
-            v-if="nextStatusMap[juryInfo.rule.status]"
+            v-if="nextStatusMap[juryInfo.rule.status] && !juryInfo.isVoteCompleted"
             type="primary"
             :loading="switchStatusLoading"
             @click="handleSwitchStatus"
@@ -373,7 +373,7 @@ watch(voteId, () => {
           </n-button>
 
           <n-button
-            v-if="juryInfo.rule.status === 'voting'"
+            v-if="juryInfo.rule.status === 'voting' && !juryInfo.isVoteCompleted"
             type="warning"
             :loading="calculateLoading"
             @click="handleCalculate"
@@ -381,6 +381,20 @@ watch(voteId, () => {
             手动算票
           </n-button>
         </n-space>
+
+        <!-- 最终获胜者展示 -->
+        <template v-if="juryInfo.isVoteCompleted && juryInfo.finalWinner">
+          <n-divider />
+          <n-alert type="success" title="投票已结束">
+            <div class="flex items-center gap-3 mt-2">
+              <n-avatar :src="juryInfo.finalWinner.avatar" :size="48" round />
+              <div>
+                <div class="font-bold text-lg">{{ juryInfo.finalWinner.nickname }}</div>
+                <div class="text-gray-500">@{{ juryInfo.finalWinner.name }} · {{ juryInfo.finalWinner.votes }} 票</div>
+              </div>
+            </div>
+          </n-alert>
+        </template>
 
         <!-- 投票进度 -->
         <template v-if="juryInfo.votingProgress">
