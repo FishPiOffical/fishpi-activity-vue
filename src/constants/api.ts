@@ -24,6 +24,19 @@ export const API_ACTIVITY = {
     RECENT: '/activity-api/recent',
 } as const
 
+// 评审团投票接口
+export const API_VOTE_JURY = {
+    INFO: (voteId: string) => `/backend/vote/jury/info/${voteId}`,
+    CREATE_USER: '/backend/vote/jury/user/create',
+    ADD_MEMBER: '/backend/vote/jury/member/add',
+    AUDIT_APPLY: '/backend/vote/jury/apply/audit',
+    SWITCH_STATUS: '/backend/vote/jury/status/switch',
+    CALCULATE: '/backend/vote/jury/calculate',
+    APPLY: '/backend/vote/jury/apply',
+    VOTE: '/backend/vote/jury/vote',
+    RESULT: (voteId: string) => `/backend/vote/jury/result/${voteId}`,
+} as const
+
 // PocketBase 集合名称
 export const PB_COLLECTIONS = {
     USERS: 'users',

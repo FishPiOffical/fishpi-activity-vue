@@ -4,3 +4,4 @@
 export { pb, setMessageApi, handlePbError, withErrorHandling } from './pocketbase'
 export { default as fishpi, setFishpiMessageApi } from './fishpi'
 export { default as activityApi } from './activity'
+export { default as voteJuryApi } from './voteJury'

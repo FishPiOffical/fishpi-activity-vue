@@ -2,8 +2,10 @@
 import ActivityArticles from './ActivityArticles.vue'
 import ActivityIntro from './ActivityIntro.vue'
 import ActivityHistory from './ActivityHistory.vue'
+import VoteJuryResult from './VoteJuryResult.vue'
 import { computed } from 'vue'
-import type { Activity } from '@/types'
+import type { Activity, VoteType } from '@/types'
+import { pb } from '@/api'
 
 interface Props {
   activity: Activity
@@ -84,6 +86,39 @@ interface YearlyHistory {
 const fullPageUrl = computed(() => {
   return window.location.origin + window.location.pathname
 })
+
+// 投票相关
+const voteInfo = ref<{ id: string; type: VoteType } | null>(null)
+const hasJuryVote = computed(() => voteInfo.value?.type === 'jury')
+
+// 获取投票信息
+async function fetchVoteInfo() {
+  if (!props.activity.voteId) return
+
+  try {
+    const vote = await pb.collection('votes').getOne(props.activity.voteId)
+    voteInfo.value = {
+      id: vote.id,
+      type: (vote.type as VoteType) || 'normal',
+    }
+  } catch (e) {
+    console.error('获取投票信息失败:', e)
+  }
+}
+
+onMounted(() => {
+  if (props.activity.voteId) {
+    fetchVoteInfo()
+  }
+})
+
+watch(() => props.activity.voteId, (newVoteId) => {
+  if (newVoteId) {
+    fetchVoteInfo()
+  } else {
+    voteInfo.value = null
+  }
+})
 </script>
 
 <template>
@@ -115,8 +150,15 @@ const fullPageUrl = computed(() => {
       </n-button>
     </div>
 
-    <!-- iframe 模式下只显示文章列表 -->
+    <!-- iframe 模式下显示文章列表和投票信息 -->
     <template v-if="isIframe">
+      <!-- 评审团投票信息（iframe 模式下也展示） -->
+      <VoteJuryResult
+        v-if="hasJuryVote && voteInfo"
+        :vote-id="voteInfo.id"
+        :is-iframe="true"
+      />
+
       <ActivityArticles :articles="articles" :is-iframe="true" />
     </template>
 
@@ -124,6 +166,13 @@ const fullPageUrl = computed(() => {
     <template v-else>
       <!-- 活动介绍 -->
       <ActivityIntro :activity="activity" />
+
+      <!-- 评审团投票组件 -->
+      <VoteJuryResult
+        v-if="hasJuryVote && voteInfo"
+        :vote-id="voteInfo.id"
+        :is-iframe="false"
+      />
 
       <!-- 奖励信息 -->
       <ActivityRewards :rewards="rewards" />

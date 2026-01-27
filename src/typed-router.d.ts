@@ -44,6 +44,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/vote/admin/[vote_id]': RouteRecordInfo<
+      '/vote/admin/[vote_id]',
+      '/vote/admin/:vote_id',
+      { vote_id: ParamValue<true> },
+      { vote_id: ParamValue<false> },
+      | never
+    >,
   }
 
   /**
@@ -72,6 +79,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/redirect.vue': {
       routes:
         | '/redirect'
+      views:
+        | never
+    }
+    'src/pages/vote/admin/[vote_id].vue': {
+      routes:
+        | '/vote/admin/[vote_id]'
       views:
         | never
     }
