@@ -149,6 +149,16 @@ export async function juryVote(data: JuryVoteRequest): Promise<JuryVoteResponse>
 }
 
 /**
+ * 撤销投票
+ */
+export async function cancelVote(data: { voteId: string; toUserId?: string }): Promise<{ message: string; cancelledCount: number }> {
+  return request<{ message: string; cancelledCount: number }>(`${API_BASE}/vote/cancel`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
  * 获取投票结果
  */
 export async function getResult(voteId: string): Promise<GetResultResponse> {
@@ -186,6 +196,7 @@ export default {
   calculate,
   applyJury,
   juryVote,
+  cancelVote,
   getResult,
   getMyApply,
   getCandidates,

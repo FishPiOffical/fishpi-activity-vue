@@ -72,6 +72,9 @@ export interface RoundResult {
   results: VoteResultItem[]
   continue: boolean
   userIds: string[]
+  votedCount: number
+  abstainCount?: number
+  totalMembers?: number
 }
 
 /** 投票进度 */
@@ -97,6 +100,7 @@ export interface GetJuryInfoResponse {
     nickname: string
     avatar: string
     votes: number
+    articles?: ArticleInfo[]
   } | null
 }
 
@@ -189,6 +193,7 @@ export interface GetResultResponse {
   currentRound: number
   results: RoundResult[]
   members: JuryMember[]
+  totalMembers: number
   isVoteCompleted: boolean
   finalWinner: {
     id: string
@@ -196,7 +201,20 @@ export interface GetResultResponse {
     nickname: string
     avatar: string
     votes: number
+    articles?: ArticleInfo[]
   } | null
+}
+
+/** 撤销投票请求 */
+export interface CancelVoteRequest {
+  voteId: string
+  toUserId?: string
+}
+
+/** 撤销投票响应 */
+export interface CancelVoteResponse {
+  message: string
+  cancelledCount: number
 }
 
 /** 获取我的申请响应 */

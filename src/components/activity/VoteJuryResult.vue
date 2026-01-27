@@ -31,6 +31,8 @@ const showApplyModal = ref(false)
 
 // 投票相关
 const voteLoading = ref(false)
+const showVoteModal = ref(false)
+const cancelVoteLoading = ref(false)
 
 // 状态映射
 const statusMap: Record<JuryStatus, string> = {
@@ -154,11 +156,30 @@ async function handleVote(toUserId: string) {
       toUserId,
     })
     message.success(`投票成功，剩余票数: ${result.remaining}`)
-    await fetchResult()
+    // 重新获取候选人列表更新状态
+    candidatesData.value = await voteJuryApi.getCandidates(props.voteId)
   } catch (e) {
     message.error(e instanceof Error ? e.message : '投票失败')
   } finally {
     voteLoading.value = false
+  }
+}
+
+// 撤销投票
+async function handleCancelVote(toUserId: string) {
+  cancelVoteLoading.value = true
+  try {
+    const result = await voteJuryApi.cancelVote({
+      voteId: props.voteId,
+      toUserId,
+    })
+    message.success(result.message)
+    // 重新获取候选人列表更新状态
+    candidatesData.value = await voteJuryApi.getCandidates(props.voteId)
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '撤销投票失败')
+  } finally {
+    cancelVoteLoading.value = false
   }
 }
 
@@ -193,6 +214,12 @@ function canVoteForCandidate(userId: string): boolean {
   }
 
   return true
+}
+
+// 计算弃票人数
+function getAbstainCount(round: { votedCount: number; totalMembers?: number }): number {
+  const total = round.totalMembers ?? resultData.value?.totalMembers ?? 0
+  return total - round.votedCount
 }
 
 onMounted(() => {
@@ -271,68 +298,39 @@ watch(() => props.voteId, () => {
         </n-button>
       </div>
 
-      <!-- 投票区域（投票阶段且是评审团成员时显示） -->
-      <template v-if="resultData.status === 'voting' && isJuryMember && candidatesData">
+      <!-- 投票按钮（投票阶段且是评审团成员时显示） -->
+      <template v-if="resultData.status === 'voting' && isJuryMember && candidatesData && !resultData.isVoteCompleted">
         <n-divider />
         <div class="mb-4">
-          <h4 class="text-base font-medium mb-2">
-            投票
-            <n-tag type="info" size="small" class="ml-2">
-              剩余 {{ candidatesData.remainingVotes }} / {{ candidatesData.totalVotes }} 票
-            </n-tag>
-          </h4>
+          <div class="flex items-center justify-between">
+            <h4 class="text-base font-medium">
+              我的投票
+              <n-tag type="info" size="small" class="ml-2">
+                已用 {{ candidatesData.usedVotes }} / {{ candidatesData.totalVotes }} 票
+              </n-tag>
+            </h4>
+            <n-button type="primary" @click="showVoteModal = true">
+              进行投票
+            </n-button>
+          </div>
 
-          <n-alert v-if="!candidatesData.allowRepeat" type="info" class="mb-3">
-            每位候选人只能投一票
-          </n-alert>
-
-          <div class="space-y-3">
-            <div
-              v-for="candidate in candidatesData.candidates"
-              :key="candidate.userId"
-              class="p-3 bg-gray-50 dark:bg-gray-800 rounded"
-            >
-              <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                  <n-avatar v-if="candidate.user" :src="candidate.user.avatar" :size="36" round />
-                  <div>
-                    <div class="font-medium">{{ candidate.user?.nickname || candidate.userId }}</div>
-                    <div class="text-sm text-gray-500">@{{ candidate.user?.name }}</div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <n-tag v-if="candidatesData.votedUsers[candidate.userId]" type="success" size="small">
-                    已投 {{ candidatesData.votedUsers[candidate.userId] }} 票
-                  </n-tag>
-                  <n-button
-                    type="primary"
-                    size="small"
-                    :disabled="!canVoteForCandidate(candidate.userId)"
-                    :loading="voteLoading"
-                    @click="handleVote(candidate.userId)"
-                  >
-                    投票
-                  </n-button>
-                </div>
-              </div>
-
-              <!-- 候选人的文章列表 -->
-              <div v-if="candidate.articles.length > 0" class="mt-2 pl-12">
-                <div class="text-sm text-gray-500 mb-1">相关文章:</div>
-                <div v-for="article in candidate.articles" :key="article.id" class="text-sm">
-                  <a
-                    :href="`https://fishpi.cn/article/${article.oId}`"
-                    target="_blank"
-                    class="text-blue-500 hover:underline"
-                  >
-                    {{ article.title }}
-                  </a>
-                  <span class="text-gray-400 ml-2">
-                    👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
-                  </span>
-                </div>
-              </div>
-            </div>
+          <!-- 已投票记录简要展示 -->
+          <div v-if="Object.keys(candidatesData.votedUsers).length > 0" class="mt-2">
+            <div class="text-sm text-gray-500 mb-1">已投票给：</div>
+            <n-space>
+              <template v-for="candidate in candidatesData.candidates" :key="candidate.userId">
+                <n-tag
+                  v-if="candidatesData.votedUsers[candidate.userId]"
+                  type="success"
+                  closable
+                  :disabled="cancelVoteLoading"
+                  @close="handleCancelVote(candidate.userId)"
+                >
+                  {{ candidate.user?.nickname || candidate.userId }} ({{ candidatesData.votedUsers[candidate.userId] }}票)
+                </n-tag>
+              </template>
+            </n-space>
+            <div class="text-xs text-gray-400 mt-1">点击 × 可撤销投票</div>
           </div>
         </div>
       </template>
@@ -346,6 +344,22 @@ watch(() => props.voteId, () => {
             <div>
               <div class="font-bold text-lg">{{ resultData.finalWinner.nickname }}</div>
               <div class="text-gray-500">@{{ resultData.finalWinner.name }} · 最终得票 {{ resultData.finalWinner.votes }} 票</div>
+            </div>
+          </div>
+          <!-- 获胜者的文章 -->
+          <div v-if="resultData.finalWinner.articles && resultData.finalWinner.articles.length > 0" class="mt-3">
+            <div class="text-sm font-medium mb-1">获奖作品：</div>
+            <div v-for="article in resultData.finalWinner.articles" :key="article.id" class="text-sm">
+              <a
+                :href="`https://fishpi.cn/article/${article.oId}`"
+                target="_blank"
+                class="text-blue-500 hover:underline"
+              >
+                {{ article.title }}
+              </a>
+              <span class="text-gray-400 ml-2">
+                👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
+              </span>
             </div>
           </div>
         </n-alert>
@@ -365,6 +379,9 @@ watch(() => props.voteId, () => {
             >
               <template #header-extra>
                 <n-space>
+                  <n-tag type="default" size="small">
+                    {{ round.votedCount }}人投票 / {{ getAbstainCount(round) }}人弃票
+                  </n-tag>
                   <n-tag v-if="round.continue" type="warning" size="small">
                     {{ round.userIds.length }} 人平票
                   </n-tag>
@@ -436,6 +453,88 @@ watch(() => props.voteId, () => {
         <n-button type="primary" :loading="applyLoading" @click="handleApply">
           提交申请
         </n-button>
+      </template>
+    </n-modal>
+
+    <!-- 投票弹窗 -->
+    <n-modal
+      v-model:show="showVoteModal"
+      preset="card"
+      title="评审团投票"
+      style="width: 600px; max-width: 90vw;"
+    >
+      <template v-if="candidatesData">
+        <n-alert v-if="candidatesData.remainingVotes <= 0" type="warning" class="mb-3">
+          您的票数已用完
+        </n-alert>
+        <n-alert v-else-if="!candidatesData.allowRepeat" type="info" class="mb-3">
+          每位候选人只能投一票，剩余 {{ candidatesData.remainingVotes }} 票
+        </n-alert>
+        <n-alert v-else type="info" class="mb-3">
+          剩余 {{ candidatesData.remainingVotes }} / {{ candidatesData.totalVotes }} 票
+        </n-alert>
+
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+          <div
+            v-for="candidate in candidatesData.candidates"
+            :key="candidate.userId"
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <n-avatar v-if="candidate.user" :src="candidate.user.avatar" :size="36" round />
+                <div>
+                  <div class="font-medium">{{ candidate.user?.nickname || candidate.userId }}</div>
+                  <div class="text-sm text-gray-500">@{{ candidate.user?.name }}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <n-tag v-if="candidatesData.votedUsers[candidate.userId]" type="success" size="small">
+                  已投 {{ candidatesData.votedUsers[candidate.userId] }} 票
+                </n-tag>
+                <n-button
+                  type="primary"
+                  size="small"
+                  :disabled="!canVoteForCandidate(candidate.userId)"
+                  :loading="voteLoading"
+                  @click="handleVote(candidate.userId)"
+                >
+                  投票
+                </n-button>
+                <n-button
+                  v-if="candidatesData.votedUsers[candidate.userId]"
+                  type="error"
+                  size="small"
+                  :loading="cancelVoteLoading"
+                  @click="handleCancelVote(candidate.userId)"
+                >
+                  撤销
+                </n-button>
+              </div>
+            </div>
+
+            <!-- 候选人的文章列表 -->
+            <div v-if="candidate.articles.length > 0" class="mt-2 pl-12">
+              <div class="text-sm text-gray-500 mb-1">相关文章:</div>
+              <div v-for="article in candidate.articles" :key="article.id" class="text-sm">
+                <a
+                  :href="`https://fishpi.cn/article/${article.oId}`"
+                  target="_blank"
+                  class="text-blue-500 hover:underline"
+                >
+                  {{ article.title }}
+                </a>
+                <span class="text-gray-400 ml-2">
+                  👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <n-button @click="showVoteModal = false">关闭</n-button>
       </template>
     </n-modal>
   </n-card>
