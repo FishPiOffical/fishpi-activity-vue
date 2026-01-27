@@ -3,6 +3,8 @@ import { voteJuryApi } from '@/api'
 import type {
   GetResultResponse,
   JuryStatus,
+  GetMyApplyResponse,
+  GetCandidatesResponse,
 } from '@/types'
 import { useUserStore } from '@/stores'
 
@@ -19,11 +21,16 @@ const userStore = useUserStore()
 const loading = ref(true)
 const error = ref<string | null>(null)
 const resultData = ref<GetResultResponse | null>(null)
+const myApplyData = ref<GetMyApplyResponse | null>(null)
+const candidatesData = ref<GetCandidatesResponse | null>(null)
 
 // 申请相关
 const applyReason = ref('')
 const applyLoading = ref(false)
 const showApplyModal = ref(false)
+
+// 投票相关
+const voteLoading = ref(false)
 
 // 状态映射
 const statusMap: Record<JuryStatus, string> = {
@@ -43,6 +50,39 @@ const statusColorMap: Record<JuryStatus, 'default' | 'info' | 'warning' | 'succe
   completed: 'error',
 }
 
+// 格式化时间
+function formatDateTime(dateStr: string): string {
+  if (!dateStr || dateStr === '0001-01-01 00:00:00.000Z') return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// 获取申请状态文本
+function getApplyStatusText(status: string): string {
+  switch (status) {
+    case 'pending': return '待审核'
+    case 'approved': return '已通过'
+    case 'rejected': return '已拒绝'
+    default: return status
+  }
+}
+
+// 获取申请状态颜色
+function getApplyStatusType(status: string): 'default' | 'warning' | 'success' | 'error' {
+  switch (status) {
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'rejected': return 'error'
+    default: return 'default'
+  }
+}
+
 // 获取投票结果
 async function fetchResult() {
   loading.value = true
@@ -50,6 +90,24 @@ async function fetchResult() {
 
   try {
     resultData.value = await voteJuryApi.getResult(props.voteId)
+
+    // 如果已登录，获取我的申请记录
+    if (userStore.isLoggedIn) {
+      try {
+        myApplyData.value = await voteJuryApi.getMyApply(props.voteId)
+      } catch (e) {
+        console.error('获取申请记录失败:', e)
+      }
+
+      // 如果是评审中状态且是成员，获取候选人列表
+      if (resultData.value.status === 'voting' && myApplyData.value?.isMember) {
+        try {
+          candidatesData.value = await voteJuryApi.getCandidates(props.voteId)
+        } catch (e) {
+          console.error('获取候选人列表失败:', e)
+        }
+      }
+    }
   } catch (e) {
     console.error('获取投票结果失败:', e)
     error.value = e instanceof Error ? e.message : '加载数据时发生错误'
@@ -74,6 +132,7 @@ async function handleApply() {
     message.success('申请提交成功')
     showApplyModal.value = false
     applyReason.value = ''
+    await fetchResult()
   } catch (e) {
     message.error(e instanceof Error ? e.message : '申请失败')
   } finally {
@@ -81,11 +140,60 @@ async function handleApply() {
   }
 }
 
+// 投票
+async function handleVote(toUserId: string) {
+  if (!userStore.isLoggedIn) {
+    userStore.goToLogin()
+    return
+  }
+
+  voteLoading.value = true
+  try {
+    const result = await voteJuryApi.juryVote({
+      voteId: props.voteId,
+      toUserId,
+    })
+    message.success(`投票成功，剩余票数: ${result.remaining}`)
+    await fetchResult()
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '投票失败')
+  } finally {
+    voteLoading.value = false
+  }
+}
+
 // 检查当前用户是否是评审团成员
 const isJuryMember = computed(() => {
-  if (!userStore.user || !resultData.value) return false
-  return resultData.value.members.some(m => m.id === userStore.user?.id)
+  return myApplyData.value?.isMember ?? false
 })
+
+// 检查是否已有待审核的申请
+const hasPendingApply = computed(() => {
+  return myApplyData.value?.applies.some(a => a.status === 'pending') ?? false
+})
+
+// 检查是否可以显示申请按钮
+const canShowApplyButton = computed(() => {
+  return resultData.value?.status === 'applying' &&
+         !isJuryMember.value &&
+         !hasPendingApply.value &&
+         userStore.isLoggedIn
+})
+
+// 检查某个候选人是否可以投票
+function canVoteForCandidate(userId: string): boolean {
+  if (!candidatesData.value) return false
+
+  // 如果票数已用完
+  if (candidatesData.value.remainingVotes <= 0) return false
+
+  // 如果不允许重复投票且已经投过
+  if (!candidatesData.value.allowRepeat && candidatesData.value.votedUsers[userId]) {
+    return false
+  }
+
+  return true
+}
 
 onMounted(() => {
   fetchResult()
@@ -133,23 +241,99 @@ watch(() => props.voteId, () => {
         </n-space>
       </div>
 
-      <!-- 申请按钮（申请阶段且未登录或非成员时显示） -->
-      <div v-if="resultData.status === 'applying' && !isJuryMember" class="mb-4">
+      <!-- 我的申请记录 -->
+      <template v-if="myApplyData && myApplyData.applies.length > 0">
+        <n-divider />
+        <div class="mb-4">
+          <h4 class="text-base font-medium mb-2">我的申请记录</h4>
+          <div class="space-y-2">
+            <div
+              v-for="apply in myApplyData.applies"
+              :key="apply.id"
+              class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded"
+            >
+              <div class="flex items-center gap-2">
+                <n-tag :type="getApplyStatusType(apply.status)" size="small">
+                  {{ getApplyStatusText(apply.status) }}
+                </n-tag>
+                <span class="text-sm text-gray-500">{{ apply.reason || '无申请理由' }}</span>
+              </div>
+              <span class="text-sm text-gray-400">{{ formatDateTime(apply.created) }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 申请按钮 -->
+      <div v-if="canShowApplyButton" class="mb-4">
         <n-button type="primary" @click="showApplyModal = true">
           申请加入评审团
         </n-button>
       </div>
 
       <!-- 投票区域（投票阶段且是评审团成员时显示） -->
-      <template v-if="resultData.status === 'voting' && isJuryMember">
+      <template v-if="resultData.status === 'voting' && isJuryMember && candidatesData">
         <n-divider />
         <div class="mb-4">
-          <h4 class="text-base font-medium mb-2">投票</h4>
-          <n-alert type="info" class="mb-2">
-            请选择您要投票的用户
+          <h4 class="text-base font-medium mb-2">
+            投票
+            <n-tag type="info" size="small" class="ml-2">
+              剩余 {{ candidatesData.remainingVotes }} / {{ candidatesData.totalVotes }} 票
+            </n-tag>
+          </h4>
+
+          <n-alert v-if="!candidatesData.allowRepeat" type="info" class="mb-3">
+            每位候选人只能投一票
           </n-alert>
-          <!-- 这里需要根据实际情况展示候选人列表 -->
-          <n-empty description="请在活动页面查看候选人并投票" />
+
+          <div class="space-y-3">
+            <div
+              v-for="candidate in candidatesData.candidates"
+              :key="candidate.userId"
+              class="p-3 bg-gray-50 dark:bg-gray-800 rounded"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <n-avatar v-if="candidate.user" :src="candidate.user.avatar" :size="36" round />
+                  <div>
+                    <div class="font-medium">{{ candidate.user?.nickname || candidate.userId }}</div>
+                    <div class="text-sm text-gray-500">@{{ candidate.user?.name }}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <n-tag v-if="candidatesData.votedUsers[candidate.userId]" type="success" size="small">
+                    已投 {{ candidatesData.votedUsers[candidate.userId] }} 票
+                  </n-tag>
+                  <n-button
+                    type="primary"
+                    size="small"
+                    :disabled="!canVoteForCandidate(candidate.userId)"
+                    :loading="voteLoading"
+                    @click="handleVote(candidate.userId)"
+                  >
+                    投票
+                  </n-button>
+                </div>
+              </div>
+
+              <!-- 候选人的文章列表 -->
+              <div v-if="candidate.articles.length > 0" class="mt-2 pl-12">
+                <div class="text-sm text-gray-500 mb-1">相关文章:</div>
+                <div v-for="article in candidate.articles" :key="article.id" class="text-sm">
+                  <a
+                    :href="`https://fishpi.cn/article/${article.oId}`"
+                    target="_blank"
+                    class="text-blue-500 hover:underline"
+                  >
+                    {{ article.title }}
+                  </a>
+                  <span class="text-gray-400 ml-2">
+                    👀{{ article.viewCount }} 👍{{ article.goodCnt }} 💬{{ article.commentCount }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </template>
 

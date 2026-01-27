@@ -116,6 +116,12 @@ export interface AddMemberResponse {
   member: UserInfo
 }
 
+/** 删除成员请求 */
+export interface RemoveMemberRequest {
+  voteId: string
+  userId: string
+}
+
 /** 审核申请请求 */
 export interface AuditApplyRequest {
   voteId: string
@@ -175,4 +181,70 @@ export interface GetResultResponse {
   currentRound: number
   results: RoundResult[]
   members: JuryMember[]
+}
+
+/** 获取我的申请响应 */
+export interface GetMyApplyResponse {
+  applies: {
+    id: string
+    reason: string
+    status: JuryApplyStatus
+    adminId: string
+    created: string
+  }[]
+  isMember: boolean
+}
+
+/** 文章信息 */
+export interface ArticleInfo {
+  id: string
+  oId: string
+  title: string
+  viewCount: number
+  goodCnt: number
+  commentCount: number
+  collectCnt: number
+  thankCnt: number
+}
+
+/** 候选人信息 */
+export interface CandidateInfo {
+  userId: string
+  user: UserInfo | null
+  articles: ArticleInfo[]
+}
+
+/** 获取候选人响应 */
+export interface GetCandidatesResponse {
+  candidates: CandidateInfo[]
+  currentRound: number
+  totalVotes: number
+  usedVotes: number
+  remainingVotes: number
+  allowRepeat: boolean
+  votedUsers: Record<string, number>
+}
+
+/** 投票详情记录 */
+export interface VoteRecord {
+  toUserId: string
+  toUser: UserInfo | null
+  times: number
+  comment: string
+  created: string
+}
+
+/** 成员投票详情 */
+export interface MemberVoteDetail {
+  userId: string
+  user: UserInfo | null
+  hasVoted: boolean
+  voteCount: number
+  votes: VoteRecord[]
+}
+
+/** 获取投票详情响应 */
+export interface GetVoteDetailsResponse {
+  currentRound: number
+  memberDetails: MemberVoteDetail[]
 }

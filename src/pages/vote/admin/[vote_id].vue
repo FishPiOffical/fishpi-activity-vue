@@ -3,6 +3,7 @@ import { voteJuryApi } from '@/api'
 import type {
   GetJuryInfoResponse,
   JuryStatus,
+  GetVoteDetailsResponse,
 } from '@/types'
 
 const route = useRoute()
@@ -13,6 +14,7 @@ const voteId = computed(() => route.params.vote_id as string)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const juryInfo = ref<GetJuryInfoResponse | null>(null)
+const voteDetails = ref<GetVoteDetailsResponse | null>(null)
 
 // 添加成员相关
 const addMemberUsername = ref('')
@@ -43,13 +45,36 @@ const statusColorMap: Record<JuryStatus, 'default' | 'info' | 'warning' | 'succe
   completed: 'error',
 }
 
-// 下一个状态映射
+// 下一个状态映射（前进）
 const nextStatusMap: Record<JuryStatus, JuryStatus | null> = {
   pending: 'applying',
   applying: 'publicity',
   publicity: 'voting',
   voting: 'completed',
   completed: null,
+}
+
+// 上一个状态映射（回退）
+const prevStatusMap: Record<JuryStatus, JuryStatus | null> = {
+  pending: null,
+  applying: 'pending',
+  publicity: 'applying',
+  voting: 'publicity',
+  completed: 'voting',
+}
+
+// 格式化时间
+function formatDateTime(dateStr: string): string {
+  if (!dateStr || dateStr === '0001-01-01 00:00:00.000Z') return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
 }
 
 // 获取评审团信息
@@ -62,12 +87,27 @@ async function fetchJuryInfo() {
 
     if (!juryInfo.value.isAdmin) {
       error.value = '您没有管理员权限'
+      return
+    }
+
+    // 如果是评审中状态，获取投票详情
+    if (juryInfo.value.rule.status === 'voting') {
+      await fetchVoteDetails()
     }
   } catch (e) {
     console.error('获取评审团信息失败:', e)
     error.value = e instanceof Error ? e.message : '加载数据时发生错误'
   } finally {
     loading.value = false
+  }
+}
+
+// 获取投票详情
+async function fetchVoteDetails() {
+  try {
+    voteDetails.value = await voteJuryApi.getVoteDetails(voteId.value)
+  } catch (e) {
+    console.error('获取投票详情失败:', e)
   }
 }
 
@@ -158,6 +198,33 @@ async function handleSwitchStatus() {
   }
 }
 
+// 回退状态
+async function handleRevertStatus() {
+  if (!juryInfo.value) return
+
+  const currentStatus = juryInfo.value.rule.status
+  const prevStatus = prevStatusMap[currentStatus]
+
+  if (!prevStatus) {
+    message.warning('已是初始状态')
+    return
+  }
+
+  switchStatusLoading.value = true
+  try {
+    await voteJuryApi.switchStatus({
+      voteId: voteId.value,
+      newStatus: prevStatus,
+    })
+    message.success('状态回退成功')
+    await fetchJuryInfo()
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '状态回退失败')
+  } finally {
+    switchStatusLoading.value = false
+  }
+}
+
 // 算票
 async function handleCalculate() {
   calculateLoading.value = true
@@ -177,6 +244,20 @@ async function handleCalculate() {
     message.error(e instanceof Error ? e.message : '算票失败')
   } finally {
     calculateLoading.value = false
+  }
+}
+
+// 删除成员
+async function handleRemoveMember(userId: string, userName: string) {
+  try {
+    await voteJuryApi.removeMember({
+      voteId: voteId.value,
+      userId,
+    })
+    message.success(`已删除成员: ${userName}`)
+    await fetchJuryInfo()
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '删除成员失败')
   }
 }
 
@@ -258,16 +339,16 @@ watch(voteId, () => {
             第 {{ juryInfo.rule.currentRound || 1 }} 轮
           </n-descriptions-item>
           <n-descriptions-item label="投票开始">
-            {{ juryInfo.vote.start }}
+            {{ formatDateTime(juryInfo.vote.start) }}
           </n-descriptions-item>
           <n-descriptions-item label="投票结束">
-            {{ juryInfo.vote.end }}
+            {{ formatDateTime(juryInfo.vote.end) }}
           </n-descriptions-item>
           <n-descriptions-item label="申请时间">
-            {{ juryInfo.rule.applyTime }}
+            {{ formatDateTime(juryInfo.rule.applyTime) }}
           </n-descriptions-item>
           <n-descriptions-item label="公示时间">
-            {{ juryInfo.rule.publicityTime }}
+            {{ formatDateTime(juryInfo.rule.publicityTime) }}
           </n-descriptions-item>
         </n-descriptions>
 
@@ -280,6 +361,15 @@ watch(voteId, () => {
             @click="handleSwitchStatus"
           >
             切换到: {{ statusMap[nextStatusMap[juryInfo.rule.status]!] }}
+          </n-button>
+
+          <n-button
+            v-if="prevStatusMap[juryInfo.rule.status]"
+            type="default"
+            :loading="switchStatusLoading"
+            @click="handleRevertStatus"
+          >
+            回退到: {{ statusMap[prevStatusMap[juryInfo.rule.status]!] }}
           </n-button>
 
           <n-button
@@ -307,6 +397,56 @@ watch(voteId, () => {
             </n-descriptions-item>
           </n-descriptions>
         </template>
+      </n-card>
+
+      <!-- 投票详情（评审中状态） -->
+      <n-card v-if="juryInfo.rule.status === 'voting' && voteDetails" class="mb-4" title="投票详情">
+        <template #header-extra>
+          <n-tag type="info">第 {{ voteDetails.currentRound }} 轮</n-tag>
+        </template>
+        <n-collapse>
+          <n-collapse-item
+            v-for="member in voteDetails.memberDetails"
+            :key="member.userId"
+            :name="member.userId"
+          >
+            <template #header>
+              <div class="flex items-center gap-2">
+                <n-avatar v-if="member.user" :src="member.user.avatar" :size="28" round />
+                <span>{{ member.user?.nickname || member.userId }}</span>
+                <n-tag v-if="member.hasVoted" type="success" size="small">已投票 ({{ member.voteCount }})</n-tag>
+                <n-tag v-else type="warning" size="small">未投票</n-tag>
+              </div>
+            </template>
+
+            <template v-if="member.votes.length > 0">
+              <n-table :bordered="false" :single-line="false" size="small">
+                <thead>
+                  <tr>
+                    <th>投给</th>
+                    <th>票数</th>
+                    <th>备注</th>
+                    <th>时间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(vote, idx) in member.votes" :key="idx">
+                    <td>
+                      <div class="flex items-center gap-2">
+                        <n-avatar v-if="vote.toUser" :src="vote.toUser.avatar" :size="24" round />
+                        <span>{{ vote.toUser?.nickname || vote.toUserId }}</span>
+                      </div>
+                    </td>
+                    <td>{{ vote.times }}</td>
+                    <td>{{ vote.comment || '-' }}</td>
+                    <td>{{ formatDateTime(vote.created) }}</td>
+                  </tr>
+                </tbody>
+              </n-table>
+            </template>
+            <n-empty v-else description="暂无投票记录" size="small" />
+          </n-collapse-item>
+        </n-collapse>
       </n-card>
 
       <!-- 评审团成员管理 -->
@@ -341,6 +481,7 @@ watch(voteId, () => {
               <th>用户名</th>
               <th>昵称</th>
               <th>是否决策者</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -356,9 +497,17 @@ watch(voteId, () => {
                 </n-tag>
                 <span v-else>-</span>
               </td>
+              <td>
+                <n-popconfirm @positive-click="handleRemoveMember(member.id, member.name)">
+                  <template #trigger>
+                    <n-button type="error" size="small">删除</n-button>
+                  </template>
+                  确定要删除该成员吗？
+                </n-popconfirm>
+              </td>
             </tr>
             <tr v-if="juryInfo.members.length === 0">
-              <td colspan="4" class="text-center text-gray-500">
+              <td colspan="5" class="text-center text-gray-500">
                 暂无成员
               </td>
             </tr>
@@ -386,13 +535,13 @@ watch(voteId, () => {
                   <span>{{ log.user?.name || log.userId }}</span>
                 </div>
               </td>
-              <td>{{ log.reason }}</td>
+              <td>{{ log.reason || '-' }}</td>
               <td>
                 <n-tag :type="getApplyStatusType(log.status)">
                   {{ getApplyStatusText(log.status) }}
                 </n-tag>
               </td>
-              <td>{{ log.created }}</td>
+              <td>{{ formatDateTime(log.created) }}</td>
               <td>
                 <n-space v-if="log.status === 'pending'">
                   <n-button

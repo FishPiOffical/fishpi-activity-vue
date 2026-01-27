@@ -9,6 +9,7 @@ import type {
   CreateUserResponse,
   AddMemberRequest,
   AddMemberResponse,
+  RemoveMemberRequest,
   AuditApplyRequest,
   SwitchStatusRequest,
   SwitchStatusResponse,
@@ -18,6 +19,9 @@ import type {
   JuryVoteRequest,
   JuryVoteResponse,
   GetResultResponse,
+  GetMyApplyResponse,
+  GetCandidatesResponse,
+  GetVoteDetailsResponse,
 } from '@/types'
 import { pb } from './pocketbase'
 
@@ -85,6 +89,16 @@ export async function addMember(data: AddMemberRequest): Promise<AddMemberRespon
 }
 
 /**
+ * 删除评审团成员
+ */
+export async function removeMember(data: RemoveMemberRequest): Promise<{ message: string }> {
+  return request<{ message: string }>(`${API_BASE}/member/remove`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+/**
  * 审核申请
  */
 export async function auditApply(data: AuditApplyRequest): Promise<{ message: string }> {
@@ -141,14 +155,39 @@ export async function getResult(voteId: string): Promise<GetResultResponse> {
   return request<GetResultResponse>(`${API_BASE}/result/${voteId}`)
 }
 
+/**
+ * 获取我的申请记录
+ */
+export async function getMyApply(voteId: string): Promise<GetMyApplyResponse> {
+  return request<GetMyApplyResponse>(`${API_BASE}/my-apply/${voteId}`)
+}
+
+/**
+ * 获取候选人列表
+ */
+export async function getCandidates(voteId: string): Promise<GetCandidatesResponse> {
+  return request<GetCandidatesResponse>(`${API_BASE}/candidates/${voteId}`)
+}
+
+/**
+ * 获取投票详情（管理员）
+ */
+export async function getVoteDetails(voteId: string): Promise<GetVoteDetailsResponse> {
+  return request<GetVoteDetailsResponse>(`${API_BASE}/vote-details/${voteId}`)
+}
+
 export default {
   getJuryInfo,
   createUser,
   addMember,
+  removeMember,
   auditApply,
   switchStatus,
   calculate,
   applyJury,
   juryVote,
   getResult,
+  getMyApply,
+  getCandidates,
+  getVoteDetails,
 }
