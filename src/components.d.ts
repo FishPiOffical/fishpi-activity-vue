@@ -17,6 +17,7 @@ declare module 'vue' {
     ActivityRewards: typeof import('./components/activity/ActivityRewards.vue')['default']
     AppProvider: typeof import('./components/AppProvider.vue')['default']
     ArticleTemplate: typeof import('./components/activity/ArticleTemplate.vue')['default']
+    FishpiUser: typeof import('./components/common/FishpiUser.vue')['default']
     NAlert: typeof import('naive-ui')['NAlert']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NButton: typeof import('naive-ui')['NButton']

@@ -5,6 +5,7 @@ import type {
   JuryStatus,
   GetVoteDetailsResponse,
 } from '@/types'
+import FishpiUser from '@/components/common/FishpiUser.vue'
 
 const route = useRoute()
 const message = useMessage()
@@ -387,11 +388,14 @@ watch(voteId, () => {
           <n-divider />
           <n-alert type="success" title="投票已结束">
             <div class="flex items-center gap-3 mt-2">
-              <n-avatar :src="juryInfo.finalWinner.avatar" :size="48" round />
-              <div>
-                <div class="font-bold text-lg">{{ juryInfo.finalWinner.nickname }}</div>
-                <div class="text-gray-500">@{{ juryInfo.finalWinner.name }} · {{ juryInfo.finalWinner.votes }} 票</div>
-              </div>
+              <FishpiUser
+                :name="juryInfo.finalWinner.name"
+                :nickname="juryInfo.finalWinner.nickname"
+                :avatar="juryInfo.finalWinner.avatar"
+                mode="full"
+                :avatar-size="48"
+              />
+              <span class="text-gray-500 ml-2">· {{ juryInfo.finalWinner.votes }} 票</span>
             </div>
           </n-alert>
         </template>
@@ -426,8 +430,14 @@ watch(voteId, () => {
           >
             <template #header>
               <div class="flex items-center gap-2">
-                <n-avatar v-if="member.user" :src="member.user.avatar" :size="28" round />
-                <span>{{ member.user?.nickname || member.userId }}</span>
+                <FishpiUser
+                  v-if="member.user"
+                  :name="member.user.name"
+                  :nickname="member.user.nickname"
+                  :avatar="member.user.avatar"
+                  mode="normal"
+                />
+                <span v-else>{{ member.userId }}</span>
                 <n-tag v-if="member.hasVoted" type="success" size="small">已投票 ({{ member.voteCount }})</n-tag>
                 <n-tag v-else type="warning" size="small">未投票</n-tag>
               </div>
@@ -446,10 +456,15 @@ watch(voteId, () => {
                 <tbody>
                   <tr v-for="(vote, idx) in member.votes" :key="idx">
                     <td>
-                      <div class="flex items-center gap-2">
-                        <n-avatar v-if="vote.toUser" :src="vote.toUser.avatar" :size="24" round />
-                        <span>{{ vote.toUser?.nickname || vote.toUserId }}</span>
-                      </div>
+                      <FishpiUser
+                        v-if="vote.toUser"
+                        :name="vote.toUser.name"
+                        :nickname="vote.toUser.nickname"
+                        :avatar="vote.toUser.avatar"
+                        mode="normal"
+                        :avatar-size="24"
+                      />
+                      <span v-else>{{ vote.toUserId }}</span>
                     </td>
                     <td>{{ vote.times }}</td>
                     <td>{{ vote.comment || '-' }}</td>
@@ -491,9 +506,7 @@ watch(voteId, () => {
         <n-table :bordered="false" :single-line="false">
           <thead>
             <tr>
-              <th>头像</th>
-              <th>用户名</th>
-              <th>昵称</th>
+              <th>用户</th>
               <th>是否决策者</th>
               <th>操作</th>
             </tr>
@@ -501,10 +514,14 @@ watch(voteId, () => {
           <tbody>
             <tr v-for="member in juryInfo.members" :key="member.id">
               <td>
-                <n-avatar :src="member.avatar" :size="32" round />
+                <FishpiUser
+                  :name="member.name"
+                  :nickname="member.nickname"
+                  :avatar="member.avatar"
+                  mode="full"
+                  :avatar-size="32"
+                />
               </td>
-              <td>{{ member.name }}</td>
-              <td>{{ member.nickname }}</td>
               <td>
                 <n-tag v-if="juryInfo.rule.decisions.includes(member.id)" type="warning">
                   决策者
@@ -521,7 +538,7 @@ watch(voteId, () => {
               </td>
             </tr>
             <tr v-if="juryInfo.members.length === 0">
-              <td colspan="5" class="text-center text-gray-500">
+              <td colspan="3" class="text-center text-gray-500">
                 暂无成员
               </td>
             </tr>
@@ -544,10 +561,15 @@ watch(voteId, () => {
           <tbody>
             <tr v-for="log in juryInfo.applyLogs" :key="log.id">
               <td>
-                <div class="flex items-center gap-2">
-                  <n-avatar v-if="log.user" :src="log.user.avatar" :size="24" round />
-                  <span>{{ log.user?.name || log.userId }}</span>
-                </div>
+                <FishpiUser
+                  v-if="log.user"
+                  :name="log.user.name"
+                  :nickname="log.user.nickname"
+                  :avatar="log.user.avatar"
+                  mode="normal"
+                  :avatar-size="24"
+                />
+                <span v-else>{{ log.userId }}</span>
               </td>
               <td>{{ log.reason || '-' }}</td>
               <td>
@@ -610,8 +632,15 @@ watch(voteId, () => {
                   <td>{{ index + 1 }}</td>
                   <td>
                     <div class="flex items-center gap-2">
-                      <n-avatar v-if="item.user" :src="item.user.avatar" :size="24" round />
-                      <span>{{ item.user?.name || item.userId }}</span>
+                      <FishpiUser
+                        v-if="item.user"
+                        :name="item.user.name"
+                        :nickname="item.user.nickname"
+                        :avatar="item.user.avatar"
+                        mode="normal"
+                        :avatar-size="24"
+                      />
+                      <span v-else>{{ item.userId }}</span>
                       <n-tag
                         v-if="round.continue && round.userIds.includes(item.userId)"
                         type="info"

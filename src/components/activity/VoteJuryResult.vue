@@ -7,6 +7,8 @@ import type {
   GetCandidatesResponse,
 } from '@/types'
 import { useUserStore } from '@/stores'
+import { getArticleUrl } from '@/utils/fishpi'
+import FishpiUser from '@/components/common/FishpiUser.vue'
 
 interface Props {
   voteId: string
@@ -277,17 +279,20 @@ watch(() => props.voteId, () => {
       <div class="mb-4">
         <h4 class="text-base font-medium mb-2">评审团成员 ({{ resultData.members.length }}人)</h4>
         <n-space>
-          <n-tooltip v-for="member in resultData.members" :key="member.id">
-            <template #trigger>
-              <n-avatar :src="member.avatar" :size="40" round />
-            </template>
-            {{ member.nickname }} (@{{ member.name }})
-          </n-tooltip>
+          <FishpiUser
+            v-for="member in resultData.members"
+            :key="member.id"
+            :name="member.name"
+            :nickname="member.nickname"
+            :avatar="member.avatar"
+            mode="simple"
+            :avatar-size="40"
+          />
         </n-space>
       </div>
 
-      <!-- 我的申请记录 -->
-      <template v-if="myApplyData && myApplyData.applies.length > 0">
+      <!-- 我的申请记录（仅申请阶段显示） -->
+      <template v-if="resultData.status === 'applying' && myApplyData && myApplyData.applies.length > 0">
         <n-divider />
         <div class="mb-4">
           <h4 class="text-base font-medium mb-2">我的申请记录</h4>
@@ -344,7 +349,13 @@ watch(() => props.voteId, () => {
                   :disabled="cancelVoteLoading"
                   @close="handleCancelVote(candidate.userId)"
                 >
-                  {{ candidate.user?.nickname || candidate.userId }} ({{ candidatesData.votedUsers[candidate.userId] }}票)
+                  <FishpiUser
+                    :name="candidate.user?.name || candidate.userId"
+                    :nickname="candidate.user?.nickname"
+                    mode="mini"
+                    disable-link
+                  />
+                  ({{ candidatesData.votedUsers[candidate.userId] }}票)
                 </n-tag>
               </template>
             </n-space>
@@ -358,18 +369,21 @@ watch(() => props.voteId, () => {
         <n-divider />
         <n-alert type="success" title="🎉 优胜者">
           <div class="flex items-center gap-3 mt-2">
-            <n-avatar :src="resultData.finalWinner.avatar" :size="56" round />
-            <div>
-              <div class="font-bold text-lg">{{ resultData.finalWinner.nickname }}</div>
-              <div class="text-gray-500">@{{ resultData.finalWinner.name }} · 最终得票 {{ resultData.finalWinner.votes }} 票</div>
-            </div>
+            <FishpiUser
+              :name="resultData.finalWinner.name"
+              :nickname="resultData.finalWinner.nickname"
+              :avatar="resultData.finalWinner.avatar"
+              mode="full"
+              :avatar-size="56"
+            />
+            <span class="text-gray-500 ml-2">· 最终得票 {{ resultData.finalWinner.votes }} 票</span>
           </div>
           <!-- 获胜者的文章 -->
           <div v-if="resultData.finalWinner.articles && resultData.finalWinner.articles.length > 0" class="mt-3">
             <div class="text-sm font-medium mb-1">获奖作品：</div>
             <div v-for="article in resultData.finalWinner.articles" :key="article.id" class="text-sm">
               <a
-                :href="`https://fishpi.cn/article/${article.oId}`"
+                :href="getArticleUrl(article.oId)"
                 target="_blank"
                 class="text-blue-500 hover:underline"
               >
@@ -420,8 +434,14 @@ watch(() => props.voteId, () => {
                 >
                   <div class="flex items-center gap-2">
                     <span class="w-6 text-center font-bold">{{ index + 1 }}</span>
-                    <n-avatar v-if="item.user" :src="item.user.avatar" :size="28" round />
-                    <span>{{ item.user?.nickname || item.userId }}</span>
+                    <FishpiUser
+                      v-if="item.user"
+                      :name="item.user.name"
+                      :nickname="item.user.nickname"
+                      :avatar="item.user.avatar"
+                      mode="normal"
+                    />
+                    <span v-else>{{ item.userId }}</span>
                   </div>
                   <n-tag type="primary">{{ item.count }} 票</n-tag>
                 </div>
@@ -497,13 +517,15 @@ watch(() => props.voteId, () => {
             class="p-3 bg-gray-50 dark:bg-gray-800 rounded"
           >
             <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-2">
-                <n-avatar v-if="candidate.user" :src="candidate.user.avatar" :size="36" round />
-                <div>
-                  <div class="font-medium">{{ candidate.user?.nickname || candidate.userId }}</div>
-                  <div class="text-sm text-gray-500">@{{ candidate.user?.name }}</div>
-                </div>
-              </div>
+              <FishpiUser
+                v-if="candidate.user"
+                :name="candidate.user.name"
+                :nickname="candidate.user.nickname"
+                :avatar="candidate.user.avatar"
+                mode="full"
+                :avatar-size="36"
+              />
+              <span v-else>{{ candidate.userId }}</span>
               <div class="flex items-center gap-2">
                 <n-tag v-if="candidatesData.votedUsers[candidate.userId]" type="success" size="small">
                   已投 {{ candidatesData.votedUsers[candidate.userId] }} 票
@@ -534,7 +556,7 @@ watch(() => props.voteId, () => {
               <div class="text-sm text-gray-500 mb-1">相关文章:</div>
               <div v-for="article in candidate.articles" :key="article.id" class="text-sm">
                 <a
-                  :href="`https://fishpi.cn/article/${article.oId}`"
+                  :href="getArticleUrl(article.oId)"
                   target="_blank"
                   class="text-blue-500 hover:underline"
                 >
