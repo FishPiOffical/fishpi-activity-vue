@@ -7,14 +7,21 @@ import pointApi, {
   POINT_STATUS_LABELS,
 } from '@/api/point'
 import type { DataTableColumns, DataTableRowKey } from 'naive-ui'
-import { NButton, NSpace, NTag, NAvatar } from 'naive-ui'
+import { NButton, NSpace, NTag, NAvatar, NEllipsis } from 'naive-ui'
 import { useUserStore } from '@/stores'
 import PointBatchCreate from '@/components/PointBatchCreate.vue'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const message = useMessage()
 const dialog = useDialog()
 const userStore = useUserStore()
+
+// 格式化时间
+function formatTime(time: string) {
+  if (!time) return '-'
+  return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
+}
 
 // 权限检查
 const isAdmin = computed(() => userStore.isAdmin)
@@ -132,17 +139,32 @@ const columns: DataTableColumns<PointRecord> = [
   {
     title: '备注',
     key: 'memo',
-    ellipsis: { tooltip: true },
+    width: 200,
+    render(row) {
+      if (!row.memo) return '-'
+      return h(NEllipsis, { style: 'max-width: 200px', tooltip: true }, () => row.memo)
+    },
   },
   {
     title: '创建时间',
     key: 'created',
-    width: 180,
+    width: 170,
+    render(row) {
+      return formatTime(row.created)
+    },
+  },
+  {
+    title: '更新时间',
+    key: 'updated',
+    width: 170,
+    render(row) {
+      return formatTime(row.updated)
+    },
   },
   {
     title: '操作',
     key: 'actions',
-    width: 100,
+    width: 80,
     render(row) {
       if (row.status === PointStatus.SUCCESS) {
         return '-'
