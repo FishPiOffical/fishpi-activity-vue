@@ -10,6 +10,7 @@ import {
 import type { DataTableColumns, FormInst, FormRules } from 'naive-ui'
 import { NButton, NSpace, NTag } from 'naive-ui'
 import { useUserStore } from '@/stores'
+import UserSelector from '@/components/UserSelector.vue'
 
 const router = useRouter()
 const message = useMessage()
@@ -516,37 +517,65 @@ async function handleSyncUser() {
 
 // ==================== 授予勋章 ====================
 const grantModalVisible = ref(false)
-const grantForm = reactive({
-  userId: '',
-  medalId: '',
-  expireTime: null as number | null,
-  data: '',
-})
+
+interface SelectedUser {
+  id: string
+  oId: string
+  name: string
+  nickname: string
+  avatar: string
+}
+
+const grantSelectedUsers = ref<SelectedUser[]>([])
+const grantSelectedMedalId = ref<string | null>(null)
+const grantExpireTime = ref<number | null>(null)
+const grantData = ref('')
 
 function showGrantModal() {
-  grantForm.userId = ''
-  grantForm.medalId = ''
-  grantForm.expireTime = null
-  grantForm.data = ''
+  grantSelectedUsers.value = []
+  grantSelectedMedalId.value = null
+  grantExpireTime.value = null
+  grantData.value = ''
   grantModalVisible.value = true
 }
 
 const grantSubmitting = ref(false)
 
+// 勋章选择选项
+const medalOptions = computed(() =>
+  medals.value.map((m) => ({
+    label: `${m.name} (${m.medalId})`,
+    value: m.medalId,
+  }))
+)
+
 async function handleGrant() {
-  if (!grantForm.userId.trim() || !grantForm.medalId.trim()) {
-    message.warning('请输入用户ID和勋章ID')
+  if (grantSelectedUsers.value.length === 0) {
+    message.warning('请选择至少一个用户')
+    return
+  }
+  if (!grantSelectedMedalId.value) {
+    message.warning('请选择勋章')
     return
   }
   grantSubmitting.value = true
   try {
-    await medalApi.grantMedal({
-      userId: grantForm.userId.trim(),
-      medalId: grantForm.medalId.trim(),
-      expireTime: grantForm.expireTime || undefined,
-      data: grantForm.data || undefined,
+    const result = await medalApi.grantMedalBatch({
+      userIds: grantSelectedUsers.value.map((u) => u.oId),
+      medalId: grantSelectedMedalId.value,
+      expireTime: grantExpireTime.value || undefined,
+      data: grantData.value || undefined,
     })
-    message.success('授予勋章成功')
+
+    if (result.dev_mode) {
+      message.warning(
+        `[开发模式] 批量授予完成：共 ${result.total} 人，成功 ${result.success}，跳过 ${result.skipped}，失败 ${result.failed}（未实际发放）`
+      )
+    } else {
+      message.success(
+        `批量授予完成：共 ${result.total} 人，成功 ${result.success}，跳过 ${result.skipped}，失败 ${result.failed}`
+      )
+    }
     grantModalVisible.value = false
   } catch (error) {
     console.error('授予失败:', error)
@@ -837,31 +866,48 @@ onMounted(() => {
     </n-modal>
 
     <!-- 授予勋章弹窗 -->
-    <n-modal v-model:show="grantModalVisible" preset="card" title="授予勋章" style="width: 500px">
-      <n-form label-placement="left" label-width="80">
-        <n-form-item label="用户ID" required>
-          <n-input v-model:value="grantForm.userId" placeholder="请输入用户ID" />
-        </n-form-item>
-        <n-form-item label="勋章ID" required>
-          <n-input v-model:value="grantForm.medalId" placeholder="请输入勋章ID" />
-        </n-form-item>
-        <n-form-item label="过期时间">
-          <n-date-picker
-            v-model:value="grantForm.expireTime"
-            type="datetime"
-            clearable
-            placeholder="选择过期时间（留空表示永不过期）"
-            style="width: 100%"
-          />
-        </n-form-item>
-        <n-form-item label="附加数据">
-          <n-input v-model:value="grantForm.data" type="textarea" placeholder="附加数据（可选）" />
-        </n-form-item>
-      </n-form>
+    <n-modal v-model:show="grantModalVisible" preset="card" title="批量授予勋章" style="width: 800px; max-height: 90vh">
+      <n-scrollbar style="max-height: calc(90vh - 150px)">
+        <n-form label-placement="top">
+          <n-form-item label="选择勋章" required>
+            <n-select
+              v-model:value="grantSelectedMedalId"
+              :options="medalOptions"
+              placeholder="请选择要授予的勋章"
+              filterable
+            />
+          </n-form-item>
+          <n-form-item label="选择用户" required>
+            <UserSelector v-model:selected-users="grantSelectedUsers" />
+          </n-form-item>
+          <n-form-item label="过期时间">
+            <n-date-picker
+              v-model:value="grantExpireTime"
+              type="datetime"
+              clearable
+              placeholder="选择过期时间（留空表示永不过期）"
+              style="width: 100%"
+            />
+          </n-form-item>
+          <n-form-item label="附加数据">
+            <n-input v-model:value="grantData" type="textarea" placeholder="附加数据（可选）" />
+          </n-form-item>
+        </n-form>
+      </n-scrollbar>
       <template #footer>
         <n-space justify="end">
+          <n-text v-if="grantSelectedUsers.length > 0" depth="3">
+            已选择 {{ grantSelectedUsers.length }} 个用户
+          </n-text>
           <n-button @click="grantModalVisible = false">取消</n-button>
-          <n-button type="primary" :loading="grantSubmitting" @click="handleGrant">授予</n-button>
+          <n-button
+            type="primary"
+            :loading="grantSubmitting"
+            :disabled="grantSelectedUsers.length === 0 || !grantSelectedMedalId"
+            @click="handleGrant"
+          >
+            批量授予
+          </n-button>
         </n-space>
       </template>
     </n-modal>

@@ -19,8 +19,13 @@ export const API_MEDAL = {
     SYNC_USER: (userId: string) => `/backend/admin/medal/sync/user/${userId}`,
     OWNERS: (medalId: string) => `/backend/admin/medal/owners/${medalId}`,
     GRANT: '/backend/admin/medal/grant',
+    GRANT_BATCH: '/backend/admin/medal/grant/batch',
     REVOKE: '/backend/admin/medal/revoke',
     SEARCH: '/backend/admin/medal/search',
+    SEARCH_USERS: '/backend/admin/medal/users/search',
+    ACTIVITIES: '/backend/admin/medal/activities',
+    ACTIVITY_PARTICIPANTS: (activityId: string) => `/backend/admin/medal/activity/${activityId}/participants`,
+    VOTE_JURY: (voteId: string) => `/backend/admin/medal/vote/${voteId}/jury`,
 } as const
 
 // 消息提示实例
@@ -263,6 +268,87 @@ export async function searchMedals(keyword: string): Promise<{ items: Medal[] }>
     return handleResponse<{ items: Medal[] }>(response)
 }
 
+/** 用户项类型 */
+export interface UserItem {
+    id: string
+    oId: string
+    name: string
+    nickname: string
+    avatar: string
+}
+
+/** 活动项类型 */
+export interface ActivityItem {
+    id: string
+    name: string
+    slug: string
+    voteId: string
+}
+
+/**
+ * 搜索用户
+ */
+export async function searchUsers(keyword: string): Promise<{ items: UserItem[] }> {
+    const response = await fetch(`${BASE_URL}${API_MEDAL.SEARCH_USERS}?keyword=${encodeURIComponent(keyword)}`, {
+        headers: getHeaders(),
+    })
+    return handleResponse<{ items: UserItem[] }>(response)
+}
+
+/**
+ * 获取活动列表
+ */
+export async function getActivities(): Promise<{ items: ActivityItem[] }> {
+    const response = await fetch(`${BASE_URL}${API_MEDAL.ACTIVITIES}`, {
+        headers: getHeaders(),
+    })
+    return handleResponse<{ items: ActivityItem[] }>(response)
+}
+
+/**
+ * 获取活动参与者
+ */
+export async function getActivityParticipants(activityId: string): Promise<{ items: UserItem[] }> {
+    const response = await fetch(`${BASE_URL}${API_MEDAL.ACTIVITY_PARTICIPANTS(activityId)}`, {
+        headers: getHeaders(),
+    })
+    return handleResponse<{ items: UserItem[] }>(response)
+}
+
+/**
+ * 获取评审团成员
+ */
+export async function getVoteJuryMembers(voteId: string): Promise<{ items: UserItem[] }> {
+    const response = await fetch(`${BASE_URL}${API_MEDAL.VOTE_JURY(voteId)}`, {
+        headers: getHeaders(),
+    })
+    return handleResponse<{ items: UserItem[] }>(response)
+}
+
+/**
+ * 批量授予勋章
+ */
+export async function grantMedalBatch(data: {
+    userIds: string[]
+    medalId: string
+    expireTime?: number
+    data?: string
+}): Promise<{
+    total: number
+    success: number
+    failed: number
+    skipped: number
+    dev_mode: boolean
+    results: Array<{ userId: string; success: boolean; error?: string }>
+}> {
+    const response = await fetch(`${BASE_URL}${API_MEDAL.GRANT_BATCH}`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    })
+    return handleResponse(response)
+}
+
 export default {
     getMedalList,
     getMedalDetail,
@@ -276,7 +362,12 @@ export default {
     syncUserMedals,
     getMedalOwners,
     grantMedal,
+    grantMedalBatch,
     revokeMedal,
     searchMedals,
+    searchUsers,
+    getActivities,
+    getActivityParticipants,
+    getVoteJuryMembers,
     setMedalMessageApi,
 }
