@@ -37,9 +37,23 @@ declare module 'vue-router/auto-routes' {
       { id: ParamValue<false> },
       | never
     >,
+    '/admin/': RouteRecordInfo<
+      '/admin/',
+      '/admin',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/admin/medal': RouteRecordInfo<
       '/admin/medal',
       '/admin/medal',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/admin/point': RouteRecordInfo<
+      '/admin/point',
+      '/admin/point',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -83,9 +97,21 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'src/pages/admin/index.vue': {
+      routes:
+        | '/admin/'
+      views:
+        | never
+    }
     'src/pages/admin/medal.vue': {
       routes:
         | '/admin/medal'
+      views:
+        | never
+    }
+    'src/pages/admin/point.vue': {
+      routes:
+        | '/admin/point'
       views:
         | never
     }

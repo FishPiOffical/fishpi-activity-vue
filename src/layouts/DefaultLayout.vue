@@ -27,11 +27,22 @@ const menuOptions = computed(() => {
     items.push({
       label: '管理',
       key: 'admin',
+      path: ROUTE_PATHS.ADMIN,
       children: [
+        {
+          label: '管理首页',
+          key: 'admin-home',
+          path: ROUTE_PATHS.ADMIN,
+        },
         {
           label: '勋章管理',
           key: 'admin-medal',
           path: ROUTE_PATHS.ADMIN_MEDAL,
+        },
+        {
+          label: '积分管理',
+          key: 'admin-point',
+          path: ROUTE_PATHS.ADMIN_POINT,
         },
       ],
     })
@@ -95,6 +106,10 @@ const themeIcon = computed(() => {
               menuOptions.map((item) => ({
                 label: item.label,
                 key: item.key,
+                children: item.children?.map((child: any) => ({
+                  label: child.label,
+                  key: child.key,
+                })),
               }))
             "
             @update:value="handleMenuSelect"
