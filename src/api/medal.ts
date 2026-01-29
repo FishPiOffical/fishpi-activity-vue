@@ -22,10 +22,14 @@ export const API_MEDAL = {
     GRANT_BATCH: '/backend/admin/medal/grant/batch',
     REVOKE: '/backend/admin/medal/revoke',
     SEARCH: '/backend/admin/medal/search',
-    SEARCH_USERS: '/backend/admin/medal/users/search',
-    ACTIVITIES: '/backend/admin/medal/activities',
-    ACTIVITY_PARTICIPANTS: (activityId: string) => `/backend/admin/medal/activity/${activityId}/participants`,
-    VOTE_JURY: (voteId: string) => `/backend/admin/medal/vote/${voteId}/jury`,
+} as const
+
+// 用户列表相关 API 路径
+export const API_USER_LIST = {
+    SEARCH: '/backend/admin/user-list/search',
+    ACTIVITIES: '/backend/admin/user-list/activities',
+    ACTIVITY_PARTICIPANTS: (activityId: string) => `/backend/admin/user-list/activity/${activityId}/participants`,
+    VOTE_JURY: (voteId: string) => `/backend/admin/user-list/vote/${voteId}/jury`,
 } as const
 
 // 消息提示实例
@@ -289,7 +293,7 @@ export interface ActivityItem {
  * 搜索用户
  */
 export async function searchUsers(keyword: string): Promise<{ items: UserItem[] }> {
-    const response = await fetch(`${BASE_URL}${API_MEDAL.SEARCH_USERS}?keyword=${encodeURIComponent(keyword)}`, {
+    const response = await fetch(`${BASE_URL}${API_USER_LIST.SEARCH}?keyword=${encodeURIComponent(keyword)}`, {
         headers: getHeaders(),
     })
     return handleResponse<{ items: UserItem[] }>(response)
@@ -299,7 +303,7 @@ export async function searchUsers(keyword: string): Promise<{ items: UserItem[] 
  * 获取活动列表
  */
 export async function getActivities(): Promise<{ items: ActivityItem[] }> {
-    const response = await fetch(`${BASE_URL}${API_MEDAL.ACTIVITIES}`, {
+    const response = await fetch(`${BASE_URL}${API_USER_LIST.ACTIVITIES}`, {
         headers: getHeaders(),
     })
     return handleResponse<{ items: ActivityItem[] }>(response)
@@ -309,7 +313,7 @@ export async function getActivities(): Promise<{ items: ActivityItem[] }> {
  * 获取活动参与者
  */
 export async function getActivityParticipants(activityId: string): Promise<{ items: UserItem[] }> {
-    const response = await fetch(`${BASE_URL}${API_MEDAL.ACTIVITY_PARTICIPANTS(activityId)}`, {
+    const response = await fetch(`${BASE_URL}${API_USER_LIST.ACTIVITY_PARTICIPANTS(activityId)}`, {
         headers: getHeaders(),
     })
     return handleResponse<{ items: UserItem[] }>(response)
@@ -319,7 +323,7 @@ export async function getActivityParticipants(activityId: string): Promise<{ ite
  * 获取评审团成员
  */
 export async function getVoteJuryMembers(voteId: string): Promise<{ items: UserItem[] }> {
-    const response = await fetch(`${BASE_URL}${API_MEDAL.VOTE_JURY(voteId)}`, {
+    const response = await fetch(`${BASE_URL}${API_USER_LIST.VOTE_JURY(voteId)}`, {
         headers: getHeaders(),
     })
     return handleResponse<{ items: UserItem[] }>(response)
