@@ -34,6 +34,10 @@ const searchApply = ref('')
 const searchVoteDetail = ref('')
 const searchResult = ref('')
 
+// 投票详情弹窗相关
+const voteDetailModalVisible = ref(false)
+const currentVoteDetailItem = ref<{ userId: string; count: number; user: { name: string; nickname: string; avatar: string } | null; voteDetails?: { fromUserId: string; fromUser: { id: string; name: string; nickname: string; avatar: string } | null; times: number }[] } | null>(null)
+
 // 状态映射
 const statusMap: Record<JuryStatus, string> = {
   pending: '未开启',
@@ -339,13 +343,25 @@ const filteredVoteDetails = computed(() => {
 })
 
 // 过滤后的投票结果（每轮结果中的用户）
-function filterRoundResults(results: { userId: string; count: number; user: { name: string; nickname: string; avatar: string } | null }[]) {
+function filterRoundResults(results: { userId: string; count: number; user: { name: string; nickname: string; avatar: string } | null; voteDetails?: { fromUserId: string; fromUser: { id: string; name: string; nickname: string; avatar: string } | null; times: number }[] }[]) {
   if (!searchResult.value.trim()) return results
   const keyword = searchResult.value.toLowerCase().trim()
   return results.filter(item =>
     item.user?.name.toLowerCase().includes(keyword) ||
     item.user?.nickname.toLowerCase().includes(keyword)
   )
+}
+
+// 投票结果按轮次倒序排序
+const sortedResults = computed(() => {
+  if (!juryInfo.value?.results) return []
+  return [...juryInfo.value.results].sort((a, b) => b.round - a.round)
+})
+
+// 显示投票详情弹窗
+function showVoteDetailModal(item: { userId: string; count: number; user: { name: string; nickname: string; avatar: string } | null; voteDetails?: { fromUserId: string; fromUser: { id: string; name: string; nickname: string; avatar: string } | null; times: number }[] }) {
+  currentVoteDetailItem.value = item
+  voteDetailModalVisible.value = true
 }
 </script>
 
@@ -541,6 +557,129 @@ function filterRoundResults(results: { userId: string; count: number; user: { na
         </n-collapse>
       </n-card>
 
+      <!-- 投票结果（移动到评审团成员上方） -->
+      <n-card v-if="juryInfo.results && juryInfo.results.length > 0" class="mb-4" title="投票结果">
+        <template #header-extra>
+          <n-input
+            v-model:value="searchResult"
+            placeholder="搜索用户..."
+            clearable
+            size="small"
+            style="width: 150px"
+          >
+            <template #prefix>
+              <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
+            </template>
+          </n-input>
+        </template>
+        <n-collapse>
+          <n-collapse-item
+            v-for="round in sortedResults"
+            :key="round.round"
+            :title="`第 ${round.round} 轮`"
+            :name="round.round"
+          >
+            <template #header-extra>
+              <n-space>
+                <n-tag v-if="round.abstainCount" type="default" size="small">
+                  {{ round.abstainCount }} 人弃票
+                </n-tag>
+                <n-tag v-if="round.continue" type="warning">进入下一轮</n-tag>
+                <n-tag v-else type="success">已完成</n-tag>
+              </n-space>
+            </template>
+
+            <n-table :bordered="false" :single-line="false">
+              <thead>
+                <tr>
+                  <th>排名</th>
+                  <th>用户</th>
+                  <th>得票数</th>
+                  <th>投票详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(item, index) in filterRoundResults([...round.results].sort((a, b) => b.count - a.count))"
+                  :key="item.userId"
+                >
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <FishpiUser
+                        v-if="item.user"
+                        :name="item.user.name"
+                        :nickname="item.user.nickname"
+                        :avatar="item.user.avatar"
+                        mode="normal"
+                        :avatar-size="24"
+                      />
+                      <span v-else>{{ item.userId }}</span>
+                      <n-tag
+                        v-if="round.continue && round.userIds.includes(item.userId)"
+                        type="info"
+                        size="small"
+                      >
+                        进入下一轮
+                      </n-tag>
+                    </div>
+                  </td>
+                  <td>{{ item.count }}</td>
+                  <td>
+                    <div v-if="item.voteDetails && item.voteDetails.length > 0" class="flex items-center gap-1 cursor-pointer" @click="showVoteDetailModal(item)">
+                      <!-- 头像列表，最多显示5个 -->
+                      <div class="flex -space-x-2">
+                        <n-avatar
+                          v-for="(detail, idx) in item.voteDetails.slice(0, 5)"
+                          :key="idx"
+                          :src="detail.fromUser?.avatar"
+                          :size="24"
+                          round
+                          class="border-2 border-white dark:border-gray-800"
+                        />
+                        <n-avatar
+                          v-if="item.voteDetails.length > 5"
+                          :size="24"
+                          round
+                          class="border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 text-xs"
+                        >
+                          +{{ item.voteDetails.length - 5 }}
+                        </n-avatar>
+                      </div>
+                      <span class="text-xs text-gray-500 ml-1">{{ item.voteDetails.length }}人</span>
+                    </div>
+                    <span v-else class="text-gray-400">-</span>
+                  </td>
+                </tr>
+                <tr v-if="filterRoundResults([...round.results]).length === 0">
+                  <td colspan="4" class="text-center text-gray-500">
+                    未找到匹配的用户
+                  </td>
+                </tr>
+              </tbody>
+            </n-table>
+
+            <!-- 弃票用户展示 -->
+            <div v-if="round.abstainUsers && round.abstainUsers.length > 0" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm text-gray-500">弃票用户 ({{ round.abstainUsers.length }}人):</span>
+              </div>
+              <n-space>
+                <FishpiUser
+                  v-for="user in round.abstainUsers"
+                  :key="user.id"
+                  :name="user.name"
+                  :nickname="user.nickname"
+                  :avatar="user.avatar"
+                  mode="simple"
+                  :avatar-size="28"
+                />
+              </n-space>
+            </div>
+          </n-collapse-item>
+        </n-collapse>
+      </n-card>
+
       <!-- 评审团成员管理 -->
       <n-card class="mb-4" title="评审团成员">
         <template #header-extra>
@@ -696,80 +835,47 @@ function filterRoundResults(results: { userId: string; count: number; user: { na
         </n-table>
       </n-card>
 
-      <!-- 投票结果 -->
-      <!-- 投票结果 -->
-      <n-card v-if="juryInfo.results && juryInfo.results.length > 0" title="投票结果">
-        <template #header-extra>
-          <n-input
-            v-model:value="searchResult"
-            placeholder="搜索用户..."
-            clearable
-            size="small"
-            style="width: 150px"
-          >
-            <template #prefix>
-              <n-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></n-icon>
-            </template>
-          </n-input>
-        </template>
-        <n-collapse>
-          <n-collapse-item
-            v-for="round in juryInfo.results"
-            :key="round.round"
-            :title="`第 ${round.round} 轮`"
-            :name="round.round"
-          >
-            <template #header-extra>
-              <n-tag v-if="round.continue" type="warning">进入下一轮</n-tag>
-              <n-tag v-else type="success">已完成</n-tag>
-            </template>
-
-            <n-table :bordered="false" :single-line="false">
-              <thead>
-                <tr>
-                  <th>排名</th>
-                  <th>用户</th>
-                  <th>得票数</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(item, index) in filterRoundResults([...round.results].sort((a, b) => b.count - a.count))"
-                  :key="item.userId"
-                >
-                  <td>{{ index + 1 }}</td>
-                  <td>
-                    <div class="flex items-center gap-2">
-                      <FishpiUser
-                        v-if="item.user"
-                        :name="item.user.name"
-                        :nickname="item.user.nickname"
-                        :avatar="item.user.avatar"
-                        mode="normal"
-                        :avatar-size="24"
-                      />
-                      <span v-else>{{ item.userId }}</span>
-                      <n-tag
-                        v-if="round.continue && round.userIds.includes(item.userId)"
-                        type="info"
-                        size="small"
-                      >
-                        进入下一轮
-                      </n-tag>
-                    </div>
-                  </td>
-                  <td>{{ item.count }}</td>
-                </tr>
-                <tr v-if="filterRoundResults([...round.results]).length === 0">
-                  <td colspan="3" class="text-center text-gray-500">
-                    未找到匹配的用户
-                  </td>
-                </tr>
-              </tbody>
-            </n-table>
-          </n-collapse-item>
-        </n-collapse>
-      </n-card>
     </template>
+
+    <!-- 投票详情弹窗 -->
+    <n-modal v-model:show="voteDetailModalVisible" preset="card" title="投票详情" style="width: 500px; max-width: 90vw;">
+      <template v-if="currentVoteDetailItem">
+        <div class="mb-3">
+          <span class="text-gray-500">被投票人：</span>
+          <FishpiUser
+            v-if="currentVoteDetailItem.user"
+            :name="currentVoteDetailItem.user.name"
+            :nickname="currentVoteDetailItem.user.nickname"
+            :avatar="currentVoteDetailItem.user.avatar"
+            mode="normal"
+            :avatar-size="24"
+          />
+          <span v-else>{{ currentVoteDetailItem.userId }}</span>
+          <n-tag type="success" size="small" class="ml-2">{{ currentVoteDetailItem.count }} 票</n-tag>
+        </div>
+        <n-divider />
+        <div class="vote-detail-list">
+          <div
+            v-for="(detail, idx) in currentVoteDetailItem.voteDetails"
+            :key="idx"
+            class="vote-detail-item flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
+          >
+            <FishpiUser
+              v-if="detail.fromUser"
+              :name="detail.fromUser.name"
+              :nickname="detail.fromUser.nickname"
+              :avatar="detail.fromUser.avatar"
+              mode="normal"
+              :avatar-size="28"
+            />
+            <span v-else>{{ detail.fromUserId }}</span>
+            <n-tag v-if="detail.times > 1" type="info" size="small">
+              {{ detail.times }} 票
+            </n-tag>
+            <n-tag v-else type="default" size="small">1 票</n-tag>
+          </div>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>

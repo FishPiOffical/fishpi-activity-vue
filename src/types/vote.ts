@@ -59,11 +59,19 @@ export interface JuryApplyLog {
   created: string
 }
 
+/** 投票详情项 - 记录谁投了票以及投票次数 */
+export interface VoteDetailItem {
+  fromUserId: string
+  fromUser: UserInfo | null
+  times: number
+}
+
 /** 单个投票结果 */
 export interface VoteResultItem {
   userId: string
   count: number
   user: UserInfo | null
+  voteDetails?: VoteDetailItem[]  // 投票详情：谁投了这个人
 }
 
 /** 轮次投票结果 */
@@ -74,6 +82,7 @@ export interface RoundResult {
   userIds: string[]
   votedCount: number
   abstainCount?: number
+  abstainUsers?: UserInfo[]  // 弃票用户列表
   totalMembers?: number
 }
 
@@ -195,6 +204,7 @@ export interface GetResultResponse {
   members: JuryMember[]
   totalMembers: number
   isVoteCompleted: boolean
+  isAdmin: boolean
   finalWinner: {
     id: string
     name: string

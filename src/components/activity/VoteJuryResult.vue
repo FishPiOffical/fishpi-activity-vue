@@ -18,6 +18,12 @@ interface Props {
 const props = defineProps<Props>()
 const message = useMessage()
 const userStore = useUserStore()
+const router = useRouter()
+
+// 跳转到管理员页面
+function goToAdminPage() {
+  router.push(`/vote/admin/${props.voteId}`)
+}
 
 // 数据状态
 const loading = ref(true)
@@ -271,12 +277,22 @@ const filteredCandidates = computed(() => {
     <template #header>
       <div class="flex items-center justify-between">
         <span>评审团投票</span>
-        <n-tag v-if="resultData" :type="statusColorMap[resultData.status]">
-          {{ statusMap[resultData.status] }}
-          <template v-if="resultData.currentRound > 1">
-            (第 {{ resultData.currentRound }} 轮)
-          </template>
-        </n-tag>
+        <n-space>
+          <n-button
+            v-if="resultData?.isAdmin"
+            size="small"
+            type="primary"
+            @click="goToAdminPage"
+          >
+            管理
+          </n-button>
+          <n-tag v-if="resultData" :type="statusColorMap[resultData.status]">
+            {{ statusMap[resultData.status] }}
+            <template v-if="resultData.currentRound > 1">
+              (第 {{ resultData.currentRound }} 轮)
+            </template>
+          </n-tag>
+        </n-space>
       </div>
     </template>
 
