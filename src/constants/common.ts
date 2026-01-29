@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
 export const ROUTE_NAMES = {
     HOME: 'index',
     REDIRECT: 'redirect',
+    ADMIN_MEDAL: 'admin-medal',
 } as const
 
 /**
@@ -22,6 +23,7 @@ export const ROUTE_NAMES = {
 export const ROUTE_PATHS = {
     HOME: '/',
     REDIRECT: '/redirect',
+    ADMIN_MEDAL: '/admin/medal',
 } as const
 
 /**

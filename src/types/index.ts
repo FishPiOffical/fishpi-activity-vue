@@ -4,3 +4,4 @@
 export * from './activity'
 export * from './user'
 export * from './vote'
+export * from './medal'

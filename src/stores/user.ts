@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia'
 import { fishpi } from '@/api'
 import type { User } from '@/types'
+import { UserRole } from '@/types'
 
 export const useUserStore = defineStore('user', () => {
     // 用户信息
@@ -12,6 +13,9 @@ export const useUserStore = defineStore('user', () => {
 
     // 是否已登录
     const isLoggedIn = computed(() => user.value !== null)
+
+    // 是否是管理员
+    const isAdmin = computed(() => user.value?.role === UserRole.ADMIN)
 
     // 初始化：从 authStore 恢复用户信息
     function init() {
@@ -37,6 +41,7 @@ export const useUserStore = defineStore('user', () => {
     return {
         user,
         isLoggedIn,
+        isAdmin,
         init,
         setUser,
         logout,

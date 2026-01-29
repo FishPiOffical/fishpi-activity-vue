@@ -37,6 +37,13 @@ declare module 'vue-router/auto-routes' {
       { id: ParamValue<false> },
       | never
     >,
+    '/admin/medal': RouteRecordInfo<
+      '/admin/medal',
+      '/admin/medal',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/redirect': RouteRecordInfo<
       '/redirect',
       '/redirect',
@@ -73,6 +80,12 @@ declare module 'vue-router/auto-routes' {
     'src/pages/activity/[id].vue': {
       routes:
         | '/activity/[id]'
+      views:
+        | never
+    }
+    'src/pages/admin/medal.vue': {
+      routes:
+        | '/admin/medal'
       views:
         | never
     }

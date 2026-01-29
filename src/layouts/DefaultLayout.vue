@@ -22,14 +22,40 @@ const menuOptions = computed(() => {
     })
   }
 
+  // 管理员显示管理菜单
+  if (userStore.isAdmin) {
+    items.push({
+      label: '管理',
+      key: 'admin',
+      children: [
+        {
+          label: '勋章管理',
+          key: 'admin-medal',
+          path: ROUTE_PATHS.ADMIN_MEDAL,
+        },
+      ],
+    })
+  }
+
   return items
 })
 
 // 处理菜单点击
 function handleMenuSelect(key: string) {
-  const item = menuOptions.value.find((i) => i.key === key)
-  if (item?.path) {
-    router.push(item.path)
+  // 在主菜单中查找
+  for (const item of menuOptions.value) {
+    if (item.key === key && item.path) {
+      router.push(item.path)
+      return
+    }
+    // 在子菜单中查找
+    if (item.children) {
+      const child = item.children.find((c: any) => c.key === key)
+      if (child?.path) {
+        router.push(child.path)
+        return
+      }
+    }
   }
 }
 
