@@ -838,9 +838,16 @@ function showVoteDetailModal(item: { userId: string; count: number; user: { name
     </template>
 
     <!-- 投票详情弹窗 -->
-    <n-modal v-model:show="voteDetailModalVisible" preset="card" title="投票详情" style="width: 500px; max-width: 90vw;">
+    <n-modal
+      v-model:show="voteDetailModalVisible"
+      preset="card"
+      title="投票详情"
+      style="width: 500px; max-width: 90vw;"
+      :trap-focus="false"
+      :auto-focus="false"
+    >
       <template v-if="currentVoteDetailItem">
-        <div class="mb-3">
+        <div class="mb-3 flex items-center flex-wrap gap-2">
           <span class="text-gray-500">被投票人：</span>
           <FishpiUser
             v-if="currentVoteDetailItem.user"
@@ -851,14 +858,14 @@ function showVoteDetailModal(item: { userId: string; count: number; user: { name
             :avatar-size="24"
           />
           <span v-else>{{ currentVoteDetailItem.userId }}</span>
-          <n-tag type="success" size="small" class="ml-2">{{ currentVoteDetailItem.count }} 票</n-tag>
+          <n-tag type="success" size="small">{{ currentVoteDetailItem.count }} 票</n-tag>
         </div>
         <n-divider />
-        <div class="vote-detail-list">
+        <div class="vote-detail-list max-h-96 overflow-y-auto">
           <div
             v-for="(detail, idx) in currentVoteDetailItem.voteDetails"
             :key="idx"
-            class="vote-detail-item flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
+            class="vote-detail-item flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
           >
             <FishpiUser
               v-if="detail.fromUser"
@@ -874,6 +881,9 @@ function showVoteDetailModal(item: { userId: string; count: number; user: { name
             </n-tag>
             <n-tag v-else type="default" size="small">1 票</n-tag>
           </div>
+        </div>
+        <div v-if="!currentVoteDetailItem.voteDetails || currentVoteDetailItem.voteDetails.length === 0" class="text-center text-gray-400 py-4">
+          暂无投票详情
         </div>
       </template>
     </n-modal>
