@@ -61,6 +61,14 @@ export interface MedalOwner {
     expired: string
     created: string
     updated: string
+    expand?: {
+        userId?: {
+            id: string
+            name: string
+            nickname: string
+            avatar: string
+        }
+    }
 }
 
 /** 分页响应 */

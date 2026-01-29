@@ -309,7 +309,29 @@ function handleOwnersPageChange(_page: number) {
 }
 
 const ownersColumns: DataTableColumns<MedalOwner> = [
-  { title: '用户ID', key: 'userId', width: 150 },
+  {
+    title: '用户',
+    key: 'userId',
+    width: 200,
+    render(row) {
+      const user = row.expand?.userId
+      if (!user) {
+        return h('span', { class: 'text-gray-500' }, row.userId)
+      }
+      return h('a', {
+        href: `https://fishpi.cn/member/${user.name}`,
+        target: '_blank',
+        class: 'flex items-center gap-2 hover:text-blue-600'
+      }, [
+        h('img', {
+          src: user.avatar,
+          alt: '头像',
+          class: 'h-8 w-8 rounded-full object-cover'
+        }),
+        h('span', user.nickname || user.name)
+      ])
+    },
+  },
   {
     title: '是否展示',
     key: 'display',
@@ -346,9 +368,11 @@ const ownersColumns: DataTableColumns<MedalOwner> = [
 ]
 
 function confirmRevokeOwner(owner: MedalOwner) {
+  const user = owner.expand?.userId
+  const userName = user ? (user.nickname || user.name) : owner.userId
   dialog.warning({
     title: '确认撤销',
-    content: `确定要撤销用户 ${owner.userId} 的此勋章吗？`,
+    content: `确定要撤销用户「${userName}」的此勋章吗？`,
     positiveText: '确定',
     negativeText: '取消',
     onPositiveClick: async () => {
