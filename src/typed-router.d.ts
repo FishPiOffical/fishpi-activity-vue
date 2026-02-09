@@ -37,6 +37,20 @@ declare module 'vue-router/auto-routes' {
       { id: ParamValue<false> },
       | never
     >,
+    '/activity/2026/character-show': RouteRecordInfo<
+      '/activity/2026/character-show',
+      '/activity/2026/character-show',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/activity/2026/character-show-admin': RouteRecordInfo<
+      '/activity/2026/character-show-admin',
+      '/activity/2026/character-show-admin',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/admin/': RouteRecordInfo<
       '/admin/',
       '/admin',
@@ -94,6 +108,18 @@ declare module 'vue-router/auto-routes' {
     'src/pages/activity/[id].vue': {
       routes:
         | '/activity/[id]'
+      views:
+        | never
+    }
+    'src/pages/activity/2026/character-show.vue': {
+      routes:
+        | '/activity/2026/character-show'
+      views:
+        | never
+    }
+    'src/pages/activity/2026/character-show-admin.vue': {
+      routes:
+        | '/activity/2026/character-show-admin'
       views:
         | never
     }
