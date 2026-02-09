@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { pb } from '@/api'
-import { ClientResponseError } from 'pocketbase'
 import type { Activity, Article } from '@/types'
-import { useAppStore, useUserStore } from '@/stores'
+import { useUserStore } from '@/stores'
 import { useMessage, useDialog, type UploadFileInfo } from 'naive-ui'
 import FishpiUser from '@/components/common/FishpiUser.vue'
 
@@ -69,16 +68,17 @@ async function fetchUserArticle() {
       filter: `activityId = "${activityId.value}" && userId = "${user.id}"`,
     })
     if (records.items.length > 0) {
-      userArticle.value = records.items[0]
-      formModel.title = userArticle.value.title
-      formModel.content = userArticle.value.content
+      const article = records.items[0] as Article
+      userArticle.value = article
+      formModel.title = article.title
+      formModel.content = article.content
       
-      if (userArticle.value.image) {
+      if (article.image) {
           fileList.value = [{
               id: 'existing',
               name: 'current-image',
               status: 'finished',
-              url: pb.files.getURL(userArticle.value, userArticle.value.image)
+              url: pb.files.getURL(article, article.image)
           }]
       }
     }

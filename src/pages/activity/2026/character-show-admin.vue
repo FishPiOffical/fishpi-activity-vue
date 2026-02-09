@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { pb } from '@/api'
-import type { Activity, ActivityMetadata } from '@/types'
+import type { Activity } from '@/types'
 import { useMessage, type UploadFileInfo } from 'naive-ui'
 import { useUserStore } from '@/stores'
 
@@ -80,7 +80,7 @@ async function handleSave() {
         delete currentMeta.promo_image
     } else {
         const newPromoFile = promoFileList.value.find(f => !f.status || f.status === 'pending')?.file
-        if (newPromoFile) {
+        if (newPromoFile && activity.value) {
             console.log('Uploading promo image to activity:', activity.value.id)
             // 改为直接传递对象，让 SDK 处理 FormData 和 images+ 语法
             const updated = await pb.collection('activities').update(activity.value.id, {
@@ -88,7 +88,7 @@ async function handleSave() {
             })
             if (updated.images && updated.images.length > 0) {
                 currentMeta.promo_image = updated.images[updated.images.length - 1]
-                activity.value = updated
+                activity.value = updated as unknown as Activity
             }
         }
     }
@@ -98,23 +98,25 @@ async function handleSave() {
         delete currentMeta.final_image
     } else {
         const newFinalFile = finalFileList.value.find(f => !f.status || f.status === 'pending')?.file
-        if (newFinalFile) {
+        if (newFinalFile && activity.value) {
             console.log('Uploading final image to activity:', activity.value.id)
             const updated = await pb.collection('activities').update(activity.value.id, {
                 'images+': newFinalFile
             })
             if (updated.images && updated.images.length > 0) {
                 currentMeta.final_image = updated.images[updated.images.length - 1]
-                activity.value = updated
+                activity.value = updated as unknown as Activity
             }
         }
     }
 
     // 3. 更新 Metadata
-    const finalUpdate = await pb.collection('activities').update(activity.value.id, {
-        metadata: currentMeta
-    })
-    activity.value = finalUpdate
+    if (activity.value) {
+        const finalUpdate = await pb.collection('activities').update(activity.value.id, {
+            metadata: currentMeta
+        })
+        activity.value = finalUpdate as unknown as Activity
+    }
     
     message.success('设置已保存')
     await fetchActivity()

@@ -31,6 +31,7 @@ export interface Activity {
     rewardDistributionStatus: DistributionStatus
     hideInList: boolean
     children: string[]
+    image: string
     images: string[]
     metadata: ActivityMetadata
     created: string
